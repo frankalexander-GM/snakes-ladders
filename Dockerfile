@@ -1,5 +1,6 @@
-FROM nginx:alpine
-COPY index.html /usr/share/nginx/html/index.html
-RUN echo 'events { worker_connections 1024; } http { server { listen 3000; location / { root /usr/share/nginx/html; index index.html; try_files $uri $uri/ =404; } } }' > /etc/nginx/conf.d/default.conf
+FROM node:18-alpine
+WORKDIR /app
+COPY index.html /app/index.html
+RUN npm install -g serve
 EXPOSE 3000
-CMD ["nginx", "-g", "daemon off;"]
+CMD ["serve", "-s", "/app", "-l", "3000"]
