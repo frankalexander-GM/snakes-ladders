@@ -1237,7 +1237,7 @@
         async function movePlayer(steps) {
             const player = players[currentPlayerIndex];
             const preset = BOARD_PRESETS[totalTiles];
-            addLog(TJ(`<strong>${player.name}</strong> rolled a <strong>${steps}</strong>.`, `<strong>${player.name}</strong> sacó un <strong>${steps}</strong>.`));
+            addLog(T(`<strong>${player.name}</strong> rolled a <strong>${steps}</strong>.`, `<strong>${player.name}</strong> sacó un <strong>${steps}</strong>.`));
 
             let currentPos = player.position;
             let targetPos = currentPos + steps;
@@ -1245,7 +1245,7 @@
             if (targetPos > totalTiles) {
                 const excess = targetPos - totalTiles;
                 targetPos = totalTiles - excess;
-                addLog(TJ(`<strong>${player.name}</strong> bounced off tile ${totalTiles}! Back to tile ${targetPos}.`, `<strong>${player.name}</strong> rebotó en la casilla ${totalTiles}! Vuelve a la ${targetPos}.`));
+                addLog(T(`<strong>${player.name}</strong> bounced off tile ${totalTiles}! Back to tile ${targetPos}.`, `<strong>${player.name}</strong> rebotó en la casilla ${totalTiles}! Vuelve a la ${targetPos}.`));
             }
 
             const stepDirection = targetPos > currentPos ? 1 : -1;
@@ -1261,7 +1261,7 @@
             if (preset.ladders[currentPos]) {
                 const newPos = preset.ladders[currentPos];
                 sound.playLadder();
-                addLog(TJ(`🪜 <strong>${player.name}</strong> climbed a ladder to tile ${newPos}! You <strong>must</strong> feel awesome!`, `🪜 ¡<strong>${player.name}</strong> subió una escalera hasta la casilla ${newPos}! ¡Debes sentirte genial!`));
+                addLog(T(`🪜 <strong>${player.name}</strong> climbed a ladder to tile ${newPos}! You <strong>must</strong> feel awesome!`, `🪜 ¡<strong>${player.name}</strong> subió una escalera hasta la casilla ${newPos}! ¡Debes sentirte genial!`));
 
                 await new Promise(r => setTimeout(r, 350));
                 player.position = newPos;
@@ -1272,14 +1272,14 @@
                 if (snake) {
                     if (player.hasShield) {
                         player.hasShield = false;
-                        addLog(TJ(`🛡️ The <strong>Snake Shield</strong> protected ${player.name}! You <strong>can</strong> stay here!`, `🛡️ ¡El <strong>escudo</strong> protegió a ${player.name}! ¡Puedes quedarte aquí!`));
+                        addLog(T(`🛡️ The <strong>Snake Shield</strong> protected ${player.name}! You <strong>can</strong> stay here!`, `🛡️ ¡El <strong>escudo</strong> protegió a ${player.name}! ¡Puedes quedarte aquí!`));
                         
                         renderPlayerCards();
                         setTurnName(player);
                     } else {
                         const newPos = snake.tail;
                         sound.playSnake();
-                        addLog(TJ(`🐍 <strong>${player.name}</strong> slid down a snake to tile ${newPos}! You <strong>should</strong> be careful!`, `🐍 ¡<strong>${player.name}</strong> bajó por una serpiente hasta la casilla ${newPos}! ¡Deberías tener cuidado!`));
+                        addLog(T(`🐍 <strong>${player.name}</strong> slid down a snake to tile ${newPos}! You <strong>should</strong> be careful!`, `🐍 ¡<strong>${player.name}</strong> bajó por una serpiente hasta la casilla ${newPos}! ¡Deberías tener cuidado!`));
 
                         await new Promise(r => setTimeout(r, 350));
                         player.position = newPos;
@@ -1312,14 +1312,14 @@
                     document.getElementById('victory-local-btns').classList.remove('hidden');
                     document.getElementById('victory-net').classList.add('hidden');
                 }
-                addLog(TJ(`🎉 <strong>${player.name} HAS WON THE GAME!</strong> 🎉`, `🎉 ¡<strong>${player.name} HA GANADO EL JUEGO!</strong> 🎉`));
+                addLog(T(`🎉 <strong>${player.name} HAS WON THE GAME!</strong> 🎉`, `🎉 ¡<strong>${player.name} HA GANADO EL JUEGO!</strong> 🎉`));
 
                 isRolling = false;
                 return;
             }
 
             if (steps === 6) {
-                addLog(TJ(`✨ ${player.name} rolled a 6! You <strong>can</strong> roll again!`, `✨ ¡${player.name} sacó un 6! ¡Puedes tirar otra vez!`));
+                addLog(T(`✨ ${player.name} rolled a 6! You <strong>can</strong> roll again!`, `✨ ¡${player.name} sacó un 6! ¡Puedes tirar otra vez!`));
 
                 isRolling = false;
                 updateTurnDisplay();
@@ -1423,9 +1423,9 @@
             player.position = res.pos;
             if (res.correct) {
                 sound.playLadder();
-                addLog(TJ(`✨ <strong>${player.name}</strong> solved the magic challenge! 🛡️ Shield activated!`, `✨ ¡<strong>${player.name}</strong> resolvió el reto! 🛡️ ¡Escudo activado!`));
+                addLog(T(`✨ <strong>${player.name}</strong> solved the magic challenge! 🛡️ Shield activated!`, `✨ ¡<strong>${player.name}</strong> resolvió el reto! 🛡️ ¡Escudo activado!`));
             } else {
-                addLog(TJ(`✨ <strong>${player.name}</strong> missed the magic challenge. Keep practicing!`, `✨ <strong>${player.name}</strong> falló el reto. ¡Sigue practicando!`));
+                addLog(T(`✨ <strong>${player.name}</strong> missed the magic challenge. Keep practicing!`, `✨ <strong>${player.name}</strong> falló el reto. ¡Sigue practicando!`));
             }
             renderPlayerCards();
             updateTokenPosition(player.id, player.position);
@@ -1768,7 +1768,7 @@
                 const nm = String(d.name || 'Guest').slice(0, 12) || 'Guest';
                 c.pIndex = net.lobby.length;
                 net.lobby.push({ name: nm, isAI: false });
-                addLog(TJ(`🌐 <strong>${nm}</strong> joined the room!`, `🌐 ¡<strong>${nm}</strong> se unió a la sala!`));
+                addLog(T(`🌐 <strong>${nm}</strong> joined the room!`, `🌐 ¡<strong>${nm}</strong> se unió a la sala!`));
                 broadcastLobby();
             } else if (d.t === 'leave') {
                 hostOnLeave(c);
@@ -1789,24 +1789,33 @@
                 net.conns.forEach(x => { if (typeof x.pIndex === 'number' && x.pIndex > c.pIndex) x.pIndex--; });
                 broadcastLobby();
             } else {
-                hostTakeover(c.pIndex);
+                endGameAbandon(c.pIndex);
             }
         }
 
-        function hostTakeover(idx) {
-            const p = players[idx];
-            if (!p || p.isAI) return;
-            p.isAI = true;
-            renderPlayerCards();
-            addLog(TJ(`🚪 <strong>${p.name}</strong> left! A Mago BOT takes over! 🤖`, `🚪 ¡<strong>${p.name}</strong> se fue! ¡Un BOT del Mago toma su lugar! 🤖`));
-            broadcastAll({ t: 'takeover', idx: idx });
-            net.resolved[p.id] = { correct: false, pos: p.position, shield: p.hasShield };
-            if (net.waiters[p.id]) {
-                const w = net.waiters[p.id];
-                delete net.waiters[p.id];
-                w(net.resolved[p.id]);
-            }
-            updateTurnDisplay();
+        function endGameAbandon(leaverIdx) {
+            if (!net.active) return;
+            net.active = false;
+            const winnerIdx = players.findIndex((p, i) => i !== leaverIdx && !p.isAI);
+            const winIdx = winnerIdx >= 0 ? winnerIdx : (leaverIdx === 0 ? 1 : 0);
+            broadcastAll({ t: 'gameover', winner: winIdx });
+            showGameOver(winIdx, true);
+        }
+
+        function showGameOver(winnerIdx, abandoned) {
+            const player = players[winnerIdx];
+            if (!player) return;
+            sound.playWin();
+            confetti({ particleCount: 140, spread: 90, origin: { y: 0.6 } });
+            document.getElementById('winner-name').innerText = player.name;
+            document.getElementById('victory-desc').innerText = abandoned
+                ? `${player.name} wins! The other player left the game.`
+                : `You finished all ${totalTiles} tiles! You must be proud!`;
+            document.getElementById('victory-modal').classList.remove('hidden');
+            document.getElementById('victory-local-btns').classList.remove('hidden');
+            document.getElementById('victory-net').classList.add('hidden');
+            addLog(`🎉 <strong>${player.name} HAS WON THE GAME!</strong> 🎉`);
+            isRolling = false;
         }
 
         function relayToGuests(d, except) {
@@ -1890,7 +1899,7 @@
 
         function hostStartGame() {
             if (net.lobby.length < 2) {
-                addLog(TJ('🌐 Need at least 2 players to start!', '🌐 ¡Se necesitan al menos 2 jugadores!'));
+                addLog(T('🌐 Need at least 2 players to start!', '🌐 ¡Se necesitan al menos 2 jugadores!'));
                 return;
             }
             totalTiles = net.roomSize;
@@ -1960,7 +1969,7 @@
                 net.conn.on('close', () => {
                     if (net.active) {
                         net.active = false;
-                        addLog(TJ('🚪 The host left the room.', '🚪 El anfitrión dejó la sala.'));
+                        showGameOver(net.myIndex, true);
                     }
                     document.getElementById('lobby-modal').classList.add('hidden');
                     roomStatus(T('🚪 Host disconnected.', '🚪 Anfitrión desconectado.'));
@@ -2026,7 +2035,7 @@
             p.isAI = true;
             p.remote = false;
             renderPlayerCards();
-            addLog(TJ(`🚪 <strong>${p.name}</strong> left! A Mago BOT takes over! 🤖`, `🚪 ¡<strong>${p.name}</strong> se fue! ¡Un BOT del Mago toma su lugar! 🤖`));
+            addLog(T(`🚪 <strong>${p.name}</strong> left! A Mago BOT takes over! 🤖`, `🚪 ¡<strong>${p.name}</strong> se fue! ¡Un BOT del Mago toma su lugar! 🤖`));
             net.resolved[p.id] = { correct: false, pos: p.position, shield: p.hasShield };
             if (net.waiters[p.id]) {
                 const w = net.waiters[p.id];
