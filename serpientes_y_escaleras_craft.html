@@ -851,7 +851,17 @@
             const source = pool.length > 0 ? pool : MAGO_CHALLENGES;
             const ch = source[Math.floor(Math.random() * source.length)];
             usedChallengeIds.add(ch.id);
-            return ch;
+            // Shuffle options so the correct answer is not always first
+            const indices = ch.options.map((_, i) => i);
+            for (let i = indices.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [indices[i], indices[j]] = [indices[j], indices[i]];
+            }
+            return {
+                ...ch,
+                options: indices.map(i => ch.options[i]),
+                correctIndex: indices.indexOf(ch.correctIndex)
+            };
         }
 
         function createBoard(fixedMagic) {
