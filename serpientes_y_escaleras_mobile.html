@@ -846,19 +846,33 @@
         const sound = new SoundEffects();
 
         const MAGO_CHALLENGES = [
-            { question: "You _____ wear a helmet when riding a bike.", questionEs: "_____ usar casco cuando montas en bicicleta.", options: ["must", "can't", "shouldn't"], correctIndex: 0, rewardMsg: "Great job! You earned a Snake Shield!" },
-            { question: "You _____ touch hot stoves! It is very dangerous.", questionEs: "¡No _____ tocar estufas calientes! Es muy peligroso.", options: ["mustn't", "can", "should"], correctIndex: 0, rewardMsg: "Great job! You earned a Snake Shield!" },
-            { question: "You _____ help your friends when they need you.", questionEs: "_____ ayudar a tus amigos cuando te necesiten.", options: ["should", "mustn't", "can't"], correctIndex: 0, rewardMsg: "The Mago is proud of you!" },
-            { question: "You _____ eat vegetables to be strong.", questionEs: "_____ comer verduras para estar fuerte.", options: ["should", "mustn't", "can't"], correctIndex: 0, rewardMsg: "Healthy and wise!" },
-            { question: "You _____ run near the swimming pool.", questionEs: "No _____ correr cerca de la piscina.", options: ["mustn't", "can", "should"], correctIndex: 0, rewardMsg: "Safety first!" },
-            { question: "You _____ say please and thank you.", questionEs: "_____ decir por favor y gracias.", options: ["should", "mustn't", "can't"], correctIndex: 0, rewardMsg: "So polite!" },
-            { question: "Birds _____ fly high in the sky.", questionEs: "Los pájaros _____ volar alto en el cielo.", options: ["can", "mustn't", "shouldn't"], correctIndex: 0, rewardMsg: "You can do anything!" },
-            { question: "You _____ do your homework before playing.", questionEs: "_____ hacer tu tarea antes de jugar.", options: ["have to", "mustn't", "can't"], correctIndex: 0, rewardMsg: "Responsible wizard!" }
+            { id: 'm1', question: "You _____ wear a helmet when riding a bike.", questionEs: "_____ usar casco cuando montas en bicicleta.", options: ["must", "can't", "shouldn't"], correctIndex: 0, rewardMsg: "Great job! You earned a Snake Shield!" },
+            { id: 'm2', question: "You _____ touch hot stoves! It is very dangerous.", questionEs: "¡No _____ tocar estufas calientes! Es muy peligroso.", options: ["mustn't", "can", "should"], correctIndex: 0, rewardMsg: "Great job! You earned a Snake Shield!" },
+            { id: 'm3', question: "You _____ help your friends when they need you.", questionEs: "_____ ayudar a tus amigos cuando te necesiten.", options: ["should", "mustn't", "can't"], correctIndex: 0, rewardMsg: "The Mago is proud of you!" },
+            { id: 'm4', question: "You _____ eat vegetables to be strong.", questionEs: "_____ comer verduras para estar fuerte.", options: ["should", "mustn't", "can't"], correctIndex: 0, rewardMsg: "Healthy and wise!" },
+            { id: 'm5', question: "You _____ run near the swimming pool.", questionEs: "No _____ correr cerca de la piscina.", options: ["mustn't", "can", "should"], correctIndex: 0, rewardMsg: "Safety first!" },
+            { id: 'm6', question: "You _____ say please and thank you.", questionEs: "_____ decir por favor y gracias.", options: ["should", "mustn't", "can't"], correctIndex: 0, rewardMsg: "So polite!" },
+            { id: 'm7', question: "Birds _____ fly high in the sky.", questionEs: "Los pájaros _____ volar alto en el cielo.", options: ["can", "mustn't", "shouldn't"], correctIndex: 0, rewardMsg: "You can do anything!" },
+            { id: 'm8', question: "You _____ do your homework before playing.", questionEs: "_____ hacer tu tarea antes de jugar.", options: ["have to", "mustn't", "can't"], correctIndex: 0, rewardMsg: "Responsible wizard!" },
+            { id: 'm9', question: "You _____ brush your teeth every day.", questionEs: "_____ cepillarte los dientes todos los días.", options: ["should", "can't", "mustn't"], correctIndex: 0, rewardMsg: "Clean and bright!" },
+            { id: 'm10', question: "You _____ look both ways before crossing.", questionEs: "_____ mirar a ambos lados antes de cruzar.", options: ["must", "shouldn't", "can't"], correctIndex: 0, rewardMsg: "Safety champion!" },
+            { id: 'm11', question: "Students _____ listen to the teacher.", questionEs: "Los alumnos _____ escuchar al profesor.", options: ["should", "can't", "mustn't"], correctIndex: 0, rewardMsg: "Wise student!" },
+            { id: 'm12', question: "You _____ wear a seatbelt in the car.", questionEs: "_____ usar cinturón de seguridad en el coche.", options: ["must", "shouldn't", "can't"], correctIndex: 0, rewardMsg: "Buckle up for safety!" },
+            { id: 'm13', question: "Dogs _____ be walked every day.", questionEs: "Los perros _____ sacarse a pasear todos los días.", options: ["need to", "can't", "mustn't"], correctIndex: 0, rewardMsg: "Happy pup!" },
+            { id: 'm14', question: "You _____ drink water after exercising.", questionEs: "_____ beber agua después de hacer ejercicio.", options: ["should", "can't", "mustn't"], correctIndex: 0, rewardMsg: "Hydrated hero!" },
+            { id: 'm15', question: "We _____ keep our classroom clean.", questionEs: "Nosotros _____ mantener el aula limpia.", options: ["should", "can't", "mustn't"], correctIndex: 0, rewardMsg: "Clean team!" },
+            { id: 'm16', question: "You _____ turn off the lights when leaving.", questionEs: "_____ apagar las luces al salir.", options: ["should", "can't", "mustn't"], correctIndex: 0, rewardMsg: "Eco-friendly!" }
         ];
+
+        const usedChallengeIds = new Set();
 
         async function generateMagoChallenge() {
             await new Promise(r => setTimeout(r, 400));
-            return MAGO_CHALLENGES[Math.floor(Math.random() * MAGO_CHALLENGES.length)];
+            const pool = MAGO_CHALLENGES.filter(c => !usedChallengeIds.has(c.id));
+            const source = pool.length > 0 ? pool : MAGO_CHALLENGES;
+            const ch = source[Math.floor(Math.random() * source.length)];
+            usedChallengeIds.add(ch.id);
+            return ch;
         }
 
         function createBoard(fixedMagic) {
@@ -1385,6 +1399,12 @@
                 } else {
                     resultEl.className = 'text-sm font-bold p-2.5 rounded-xl border-2 border-[#332211] bg-amber-100 text-amber-900';
                     resultEl.innerText = T(`Nice try! Keep practicing modal verbs!`, `¡Buen intento! ¡Sigue practicando!`);
+                    if (player.position > 1) {
+                        player.position -= 1;
+                        updateTokenPosition(player.id, player.position);
+                        setPosText(player.id, player.position);
+                        addLog(T(`<strong>${player.name}</strong> moved back to tile ${player.position}.`, `<strong>${player.name}</strong> retrocedió a la casilla ${player.position}.`));
+                    }
                 }
                 resultEl.classList.remove('hidden');
                 if (net.active) {
