@@ -362,7 +362,7 @@
                 <h3 class="text-base font-bold text-[#553311] border-b-2 border-dashed border-[#886644] pb-1.5 mb-2 flex items-center justify-between">
                     <span id="players-title">Players</span>
                     <span class="flex items-center gap-1.5">
-                        <button onclick="openLeaveModal()" class="paper-button bg-white px-2 py-0.5 text-[10px] text-[#332211]" title="Abandonar partida">Salir 🚪</button>
+                        <button id="leave-btn" onclick="openLeaveModal()" class="hidden paper-button bg-white px-2 py-0.5 text-[10px] text-[#332211]" title="Abandonar partida">Salir 🚪</button>
                         <i class="fa-solid fa-user-group text-amber-700"></i>
                     </span>
                 </h3>
@@ -1180,6 +1180,8 @@
             isRolling = false;
 
             document.getElementById('config-modal').classList.add('hidden');
+            const lb = document.getElementById('leave-btn');
+            if (lb) lb.classList.add('hidden');
             document.getElementById('game-log').innerHTML = `<div class="italic text-[#775533]">${TJ(`Started a ${totalTiles}-tile game! Roll the dice!`, `¡Partida de ${totalTiles} casillas! ¡Tira el dado!`)}</div>`;
 
             createBoard();
@@ -1936,6 +1938,8 @@
             net.resolved = {};
             net.challengeDone = null;
             net.queue = Promise.resolve();
+            const lb = document.getElementById('leave-btn');
+            if (lb) lb.classList.remove('hidden');
             ['room-modal', 'lobby-modal', 'config-modal', 'victory-modal', 'magic-modal'].forEach(id => document.getElementById(id).classList.add('hidden'));
             document.getElementById('game-log').innerHTML = `<div class="italic text-[#775533]">${TJ(`🌐 Online room <strong>${net.code}</strong> started! Good luck!`, `🌐 ¡Sala online <strong>${net.code}</strong> iniciada! ¡Buena suerte!`)}</div>`;
             createBoard(s.magicTiles);
@@ -2066,6 +2070,8 @@
             net.resolved = {};
             net.challengeDone = null;
             net.queue = Promise.resolve();
+            const lb = document.getElementById('leave-btn');
+            if (lb) lb.classList.add('hidden');
             if (!silent) location.reload();
         }
 
