@@ -851,17 +851,7 @@
             const source = pool.length > 0 ? pool : MAGO_CHALLENGES;
             const ch = source[Math.floor(Math.random() * source.length)];
             usedChallengeIds.add(ch.id);
-            // Shuffle options so the correct answer is not always first
-            const indices = ch.options.map((_, i) => i);
-            for (let i = indices.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [indices[i], indices[j]] = [indices[j], indices[i]];
-            }
-            return {
-                ...ch,
-                options: indices.map(i => ch.options[i]),
-                correctIndex: indices.indexOf(ch.correctIndex)
-            };
+            return ch;
         }
 
         function createBoard(fixedMagic) {
@@ -1389,14 +1379,9 @@
                     resultEl.className = 'text-sm font-bold p-2.5 rounded-xl border-2 border-[#332211] bg-amber-100 text-amber-900';
                     resultEl.innerText = T(`Nice try! Keep practicing modal verbs!`, `¡Buen intento! ¡Sigue practicando!`);
                     if (player.position > 1) {
-                        const target = player.position - 1;
-                        while (player.position > target) {
-                            player.position -= 1;
-                            updateTokenPosition(player.id, player.position);
-                            setPosText(player.id, player.position);
-                            sound.playStep();
-                            await new Promise(r => setTimeout(r, 320));
-                        }
+                        player.position -= 1;
+                        updateTokenPosition(player.id, player.position);
+                        setPosText(player.id, player.position);
                         addLog(T(`<strong>${player.name}</strong> moved back to tile ${player.position}.`, `<strong>${player.name}</strong> retrocedió a la casilla ${player.position}.`));
                     }
                 }
