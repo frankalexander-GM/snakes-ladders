@@ -1,0 +1,2052 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Snakes & Ladders - Modal Verbs Edition</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts & FontAwesome -->
+    <link href="https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&family=Caveat:wght@600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Canvas Confetti Library -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <!-- PeerJS for online multiplayer (P2P, no backend needed) -->
+    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        kalam: ['Kalam', 'cursive'],
+                        caveat: ['Caveat', 'cursive'],
+                    },
+                    colors: {
+                        paperBg: '#f6ecd9',
+                        paperDark: '#eadabe',
+                        crayonRed: '#ff4d6d',
+                        crayonBlue: '#3a86ff',
+                        crayonGreen: '#38b000',
+                        crayonYellow: '#ffbe0b',
+                        crayonOrange: '#fb5607',
+                        crayonPurple: '#8338ec',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Kalam', cursive;
+            background-color: #f3e9d2;
+            background-image: 
+                radial-gradient(#d3c09e 1px, transparent 0),
+                radial-gradient(#d3c09e 1px, #f3e9d2 0);
+            background-size: 24px 24px;
+            background-position: 0 0, 12px 12px;
+            color: #332211;
+            min-height: 100vh;
+            user-select: none;
+            touch-action: manipulation;
+        }
+
+        /* Paper cut-out effect */
+        .paper-card {
+            background: #fffdf5;
+            background-image: repeating-linear-gradient(#0000 0 28px, #e5dcc3 28px 29px);
+            border: 3px solid #4a3525;
+            border-radius: 255px 15px 225px 15px/15px 225px 15px 255px;
+            box-shadow: 4px 6px 0px rgba(74, 53, 37, 0.2);
+            position: relative;
+        }
+
+        .paper-button {
+            border: 3px solid #332211;
+            border-radius: 255px 15px 225px 15px/15px 225px 15px 255px;
+            box-shadow: 3px 4px 0px #332211;
+            transition: all 0.15s ease-in-out;
+            font-family: 'Kalam', cursive;
+            font-weight: 700;
+        }
+
+        .paper-button:hover {
+            transform: translate(-1px, -2px) rotate(-1deg);
+            box-shadow: 5px 6px 0px #332211;
+        }
+
+        .paper-button:active {
+            transform: translate(2px, 2px) rotate(1deg);
+            box-shadow: 1px 1px 0px #332211;
+        }
+
+        /* Board Container */
+        .board-wrapper {
+            position: relative;
+            background: #fcf8ec;
+            border: 6px dashed #5c3d2e;
+            border-radius: 24px 12px 28px 16px/16px 28px 12px 24px;
+            box-shadow: 6px 10px 0px rgba(92, 61, 46, 0.25);
+            padding: 8px;
+            max-height: 70vh;
+            overflow-y: auto;
+            scroll-behavior: smooth;
+        }
+
+        /* Custom Scrollbar */
+        .board-wrapper::-webkit-scrollbar {
+            width: 10px;
+        }
+        .board-wrapper::-webkit-scrollbar-track {
+            background: #f1dfbf;
+            border-radius: 10px;
+        }
+        .board-wrapper::-webkit-scrollbar-thumb {
+            background: #a88d71;
+            border-radius: 10px;
+            border: 2px solid #f1dfbf;
+        }
+
+        .board-grid {
+            display: grid;
+            width: 100%;
+            position: relative;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 3px solid #5c3d2e;
+        }
+
+        .cell {
+            position: relative;
+            display: flex;
+            align-items: flex-start;
+            justify-content: flex-start;
+            padding: 2px 4px;
+            font-weight: 700;
+            font-size: clamp(0.6rem, 1.8vw, 1rem);
+            color: #4a3525;
+            border: 1px dashed rgba(92, 61, 46, 0.35);
+        }
+
+        .cell-light {
+            background-color: #fff9ed;
+        }
+
+        .cell-dark {
+            background-color: #f1dfbf;
+        }
+
+        /* SVG Overlay Layer */
+        #svg-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        #tokens-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 20;
+        }
+
+        /* Player Pawn Cutout Buttons */
+        .player-token {
+            position: absolute;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: 2px solid #2b1a0e;
+            box-shadow: 1px 2px 0px rgba(43, 26, 14, 0.4);
+            transition: all 0.25s cubic-bezier(0.34, 1.4, 0.64, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 0.7rem;
+            font-weight: bold;
+            z-index: 25;
+            transform: translate(-50%, -50%);
+        }
+
+        /* Hand-Drawn Dice Styling */
+        .crayon-dice {
+            width: 60px;
+            height: 60px;
+            background: #ffffff;
+            border: 3.5px solid #2b1a0e;
+            border-radius: 18px 8px 20px 10px/10px 20px 8px 18px;
+            box-shadow: 4px 5px 0px #2b1a0e;
+            display: grid;
+            grid-template: repeat(3, 1fr) / repeat(3, 1fr);
+            padding: 6px;
+            cursor: pointer;
+            transition: transform 0.15s ease;
+        }
+
+        .crayon-dice:hover {
+            transform: scale(1.05) rotate(-2deg);
+        }
+
+        .dice-dot {
+            width: 9px;
+            height: 9px;
+            background-color: #ff3366;
+            border-radius: 50%;
+            justify-self: center;
+            align-self: center;
+            box-shadow: inset -1px -1px 0px rgba(0,0,0,0.3);
+        }
+
+        .active-turn {
+            border-color: #ff4d6d !important;
+            transform: scale(1.02);
+            background: #fff3f5 !important;
+        }
+
+        .wobbly-title {
+            display: inline-block;
+            animation: wobble 4s ease-in-out infinite alternate;
+        }
+
+        @keyframes wobble {
+            0% { transform: rotate(-2deg); }
+            100% { transform: rotate(2deg); }
+        }
+
+        /* Magic Tile Glow */
+        .magic-tile {
+            background-color: #fef08a !important;
+            border: 2px dashed #ca8a04 !important;
+        }
+        .magic-tile::after {
+            content: '✨';
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            font-size: 0.8rem;
+        }
+        .magic-tile.no-sparkle::after {
+            content: none;
+        }
+
+        /* Mobile: modals scroll, board breathes, no horizontal overflow */
+        body {
+            overflow-x: hidden;
+        }
+        div[id$="-modal"] .paper-card {
+            max-height: 92vh;
+            max-height: 92dvh;
+            overflow-y: auto;
+        }
+        @media (max-width: 479px) {
+            .board-wrapper {
+                padding: 4px;
+                max-height: 62vh;
+            }
+            .paper-card {
+                border-width: 2px;
+            }
+        }
+
+        /* Stitch mobile patterns: bouncing active token, small dice, accordions */
+        @keyframes tokenBounce {
+            0%, 100% { transform: translate(-50%, -50%) scale(1); }
+            50% { transform: translate(-50%, -50%) scale(1.15); }
+        }
+        .dice-sm {
+            width: 52px;
+            height: 52px;
+            padding: 5px;
+        }
+        .dice-sm .dice-dot {
+            width: 8px;
+            height: 8px;
+        }
+        summary::-webkit-details-marker {
+            display: none;
+        }
+        summary::marker {
+            content: '';
+        }
+        @media (max-width: 479px) {
+            main {
+                padding-bottom: 5.5rem;
+            }
+            header {
+                position: sticky;
+                top: 0;
+                z-index: 40;
+            }
+            .token-active {
+                animation: tokenBounce 1.2s infinite ease-in-out;
+            }
+        }
+
+        /* Ad zone: two slots, banner-like */
+        .ads-slot {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 2px;
+            min-height: 90px;
+            padding: 8px;
+            font-size: 11px;
+            font-weight: 700;
+            color: #775533;
+            background: repeating-linear-gradient(45deg, #f1dfbf, #f1dfbf 10px, #e7d3ae 10px, #e7d3ae 20px);
+            border: 2px dashed #a88d71;
+            border-radius: 12px;
+        }
+        .ads-slot .ads-size {
+            font-size: 9px;
+            font-weight: 400;
+            opacity: 0.7;
+        }
+        @media (max-width: 479px) {
+            .ads-slot {
+                min-height: 64px;
+            }
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen">
+
+    <!-- Header -->
+    <header class="p-2 sm:p-4">
+        <div class="max-w-5xl mx-auto flex justify-between items-center bg-white/80 backdrop-blur-sm border-2 border-[#4a3525] rounded-2xl p-2 px-3 sm:p-3 sm:px-5 shadow-[4px_4px_0px_#4a3525]">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 bg-crayonYellow border-2 border-[#4a3525] rounded-full flex items-center justify-center text-xl shadow-[2px_2px_0px_#4a3525] transform -rotate-6">
+                    ✏️
+                </div>
+                <div>
+                    <h1 class="text-base sm:text-2xl font-bold tracking-wide text-[#332211] wobbly-title">
+                        SNAKES & LADDERS
+                    </h1>
+                    <p id="subtitle" class="text-xs text-[#664422] font-semibold hidden sm:block">Modal Verbs Edition! 🧙‍♂️✨</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center space-x-3">
+                <button id="sound-btn" onclick="toggleAudio()" class="paper-button bg-amber-100 p-2.5 text-sm text-[#332211]" title="Sound">
+                    <i id="sound-icon" class="fa-solid fa-volume-high"></i>
+                </button>
+                <button onclick="openRoomModal()" class="paper-button bg-crayonBlue text-white px-4 py-2 text-sm flex items-center gap-1.5">
+                    <i class="fa-solid fa-globe"></i>
+                    <span id="mp-label" class="hidden sm:inline">Multiplayer</span>
+                </button>
+                <button onclick="openConfigModal()" class="paper-button bg-crayonYellow px-4 py-2 text-sm text-[#332211] flex items-center gap-1.5" title="Game setup">
+                    <i class="fa-solid fa-gear"></i>
+                    <span id="setup-label" class="hidden sm:inline">Setup</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="flex-grow max-w-5xl w-full mx-auto p-3 sm:p-5 grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-5 items-start">
+        
+        <!-- Game Board -->
+        <div class="lg:col-span-8 flex flex-col items-center">
+
+            <!-- Players List (top) -->
+            <div class="paper-card p-3 w-full max-w-[620px] mb-3">
+                <h3 class="text-base font-bold text-[#553311] border-b-2 border-dashed border-[#886644] pb-1.5 mb-2 flex items-center justify-between">
+                    <span id="players-title">Players</span>
+                    <i class="fa-solid fa-user-group text-amber-700"></i>
+                </h3>
+                <div id="players-list" class="grid grid-cols-2 gap-2">
+                    <!-- Dynamic -->
+                </div>
+            </div>
+
+            <div id="board-container" class="board-wrapper w-full max-w-[620px]">
+                <div class="relative w-full">
+                    <!-- Grid Cells -->
+                    <div id="board" class="board-grid"></div>
+                    
+                    <!-- SVG Layer for Snakes & Ladders -->
+                    <svg id="svg-layer"></svg>
+                    
+                    <!-- Token Layer -->
+                    <div id="tokens-layer"></div>
+                </div>
+            </div>
+
+            <!-- Ad zone -->
+            <div id="ads-zone" class="w-full max-w-[620px] mt-2 grid grid-cols-2 gap-2">
+                <div class="ads-slot"><span class="text-lg">📢</span><span>ANUNCIO 1</span><span class="ads-size">320 × 100</span></div>
+                <div class="ads-slot"><span class="text-lg">📢</span><span>ANUNCIO 2</span><span class="ads-size">320 × 100</span></div>
+            </div>
+
+        </div>
+
+        <!-- Side Panel -->
+        <div class="lg:col-span-4 space-y-4">
+
+            <div id="game-log" class="hidden"></div>
+
+            <!-- Ad slot near rules -->
+            <div id="ads-rules" class="ads-slot mt-2"><span class="text-lg">📢</span><span>ANUNCIO</span><span class="ads-size">300 × 250</span></div>
+
+        </div>
+
+    </main>
+
+    <!-- Mobile bottom dice bar (mirrors turn controls; hidden on larger screens) -->
+    <div id="mobile-bar" class="fixed bottom-0 inset-x-0 z-40">
+        <div class="paper-card mx-3 mb-3 p-2.5 flex items-center justify-between gap-2">
+            <div class="flex items-center gap-2 min-w-0">
+                <div id="turn-badge-m" class="w-9 h-9 border-2 border-[#332211] rounded-full flex items-center justify-center font-bold shadow-[2px_2px_0px_#332211] flex-shrink-0">1</div>
+                <p id="current-player-name-m" class="font-bold text-sm text-[#332211] truncate">Player 1</p>
+            </div>
+            <div id="dice-m" class="crayon-dice dice-sm flex-shrink-0" onclick="rollDiceFromClick()"></div>
+            <button id="roll-btn-m" onclick="rollDiceFromClick()" class="paper-button bg-crayonGreen text-white text-sm px-4 py-2.5 flex items-center gap-1.5 flex-shrink-0">
+                <span>Roll</span><span>🎲</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Config Modal -->
+    <div id="config-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+        <div class="paper-card max-w-md w-full p-6 text-center space-y-5">
+            
+            <div class="space-y-1">
+                <div class="w-14 h-14 bg-crayonYellow border-3 border-[#332211] rounded-full inline-flex items-center justify-center text-2xl shadow-[3px_3px_0px_#332211] mb-1">
+                    🎨
+                </div>
+                <h2 id="cfg-title" class="text-2xl font-bold text-[#332211]">Game Setup</h2>
+                <p id="cfg-sub" class="text-sm text-[#664422]">Choose board size, players & magic settings</p>
+            </div>
+
+            <!-- Board Size -->
+            <div class="space-y-2 text-left">
+                <label id="cfg-board" class="text-xs font-bold text-[#664422] uppercase tracking-wider block text-center">Board Size</label>
+                <div class="grid grid-cols-3 gap-2">
+                    <button type="button" onclick="setBoardSize(100)" class="board-size-btn paper-button bg-crayonYellow p-2 text-sm text-center" data-size="100">
+                        <span class="bs-label">100 Tiles</span>
+                    </button>
+                    <button type="button" onclick="setBoardSize(150)" class="board-size-btn paper-button bg-white p-2 text-sm text-center" data-size="150">
+                        <span class="bs-label">150 Tiles</span>
+                    </button>
+                    <button type="button" onclick="setBoardSize(200)" class="board-size-btn paper-button bg-white p-2 text-sm text-center" data-size="200">
+                        <span class="bs-label">200 Tiles ⭐</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Number of Players -->
+            <div class="space-y-2">
+                <label id="cfg-count" class="text-xs font-bold text-[#664422] uppercase tracking-wider block">Number of Players</label>
+                <div class="grid grid-cols-4 gap-2">
+                    <button type="button" onclick="setPlayerCount(1)" class="count-btn paper-button bg-white p-2.5 text-lg" data-count="1">1</button>
+                    <button type="button" onclick="setPlayerCount(2)" class="count-btn paper-button bg-crayonYellow p-2.5 text-lg" data-count="2">2</button>
+                    <button type="button" onclick="setPlayerCount(3)" class="count-btn paper-button bg-white p-2.5 text-lg" data-count="3">3</button>
+                    <button type="button" onclick="setPlayerCount(4)" class="count-btn paper-button bg-white p-2.5 text-lg" data-count="4">4</button>
+                </div>
+            </div>
+
+            <!-- Mago Features -->
+            <div class="space-y-2 text-left bg-amber-50 p-3 rounded-xl border-2 border-[#5c3d2e]">
+                <label id="cfg-feat" class="text-xs font-bold text-[#664422] uppercase tracking-wider block text-center">Mago Features 🧙‍♂️✨</label>
+                <div class="flex flex-col gap-2 text-xs font-bold text-[#4a3525]">
+                    <label class="flex items-center space-x-2 cursor-pointer">
+                        <input type="checkbox" id="mago-challenges-check" checked class="rounded border-[#4a3525] text-amber-600 focus:ring-0">
+                        <span id="cfg-n2">Modal Verbs Magic Challenge Tiles</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Player Name Inputs -->
+            <div id="player-inputs-container" class="space-y-2.5 text-left">
+                <!-- Dynamic -->
+            </div>
+
+            <!-- Start Button -->
+            <button onclick="startGameFromModal()" class="paper-button bg-crayonGreen text-white w-full py-3 text-xl mt-2">
+                <span id="start-label">START PLAYING! ✨</span>
+            </button>
+            <button onclick="closeConfigModal()" class="paper-button bg-white text-[#332211] w-full py-2 text-sm mt-2">
+                <span id="cancel-label">Cancel</span>
+            </button>
+
+        </div>
+    </div>
+
+    <!-- Magic Challenge Modal -->
+    <div id="magic-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+        <div class="paper-card max-w-md w-full p-6 text-center space-y-4">
+            <div class="w-16 h-16 bg-amber-300 border-3 border-[#332211] rounded-full inline-flex items-center justify-center text-3xl shadow-[3px_3px_0px_#332211]">
+                ✨✏️
+            </div>
+            <div>
+                <span id="magic-title" class="text-xs font-bold text-amber-800 uppercase tracking-wider">Magic Tile: Modal Verbs Challenge!</span>
+                <h3 id="magic-question" class="text-lg font-bold text-[#332211] mt-1 leading-snug">
+                    Consulting magic spell book...
+                </h3>
+            </div>
+            
+            <div id="magic-options" class="space-y-2 text-left">
+                <!-- Options -->
+            </div>
+
+            <div id="magic-result" class="hidden text-sm font-bold p-2.5 rounded-xl border-2 border-[#332211]"></div>
+        </div>
+    </div>
+
+    <!-- Victory Modal -->
+    <div id="victory-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+        <div class="paper-card max-w-sm w-full p-6 text-center space-y-4">
+            <div class="w-20 h-20 bg-crayonYellow border-3 border-[#332211] rounded-full inline-flex items-center justify-center text-4xl shadow-[3px_4px_0px_#332211]">
+                🏆
+            </div>
+            
+            <div>
+                <h2 id="victory-title" class="text-3xl font-bold text-[#332211]">VICTORY!</h2>
+                <p id="winner-name" class="text-2xl font-bold text-amber-700 mt-1">Player 1</p>
+                <p id="victory-desc" class="text-sm text-[#664422] mt-1">You must celebrate! You completed the entire board!</p>
+            </div>
+
+            <div id="victory-local-btns" class="flex gap-2">
+                <button onclick="restartGame()" class="paper-button bg-crayonGreen text-white flex-1 py-2.5 text-lg">
+                    <span id="play-label">Play Again 🔄</span>
+                </button>
+                <button onclick="openConfigModal()" class="paper-button bg-crayonYellow text-[#332211] flex-1 py-2.5 text-lg">
+                    <span id="new-label">New Game ⚙️</span>
+                </button>
+            </div>
+
+            <div id="victory-net" class="hidden space-y-2">
+                <p id="netroom-label" class="text-xs font-bold text-[#664422]">🌐 Online room game</p>
+                <div id="victory-host-btns" class="hidden flex gap-2">
+                    <button onclick="restartGame()" class="paper-button bg-crayonGreen text-white flex-1 py-2.5 text-lg">
+                        <span id="netagain-label">New Game 🔄</span>
+                    </button>
+                    <button onclick="leaveRoom()" class="paper-button bg-white text-[#332211] flex-1 py-2.5 text-lg">
+                        <span class="lobbyleave-label">Leave 🚪</span>
+                    </button>
+                </div>
+                <div id="victory-guest-note" class="hidden space-y-2">
+                    <p id="netwait-label" class="text-sm font-bold text-amber-800 animate-pulse">Waiting for the host to start a new game... 🌀</p>
+                    <button onclick="leaveRoom()" class="paper-button bg-white text-[#332211] w-full py-2.5 text-lg">
+                        <span class="lobbyleave-label">Leave Room 🚪</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Room Modal (Online Multiplayer) -->
+    <div id="room-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+        <div class="paper-card max-w-md w-full p-6 text-center space-y-4">
+            <div class="space-y-1">
+                <div class="w-14 h-14 bg-crayonBlue border-3 border-[#332211] rounded-full inline-flex items-center justify-center text-2xl shadow-[3px_3px_0px_#332211] mb-1">
+                    🌐
+                </div>
+                <h2 id="room-title" class="text-2xl font-bold text-[#332211]">Online Multiplayer</h2>
+                <p id="room-sub" class="text-sm text-[#664422]">Play with friends on other devices! No account needed.</p>
+            </div>
+
+            <div class="text-left">
+                <label id="room-name-label" class="text-xs font-bold text-[#664422] uppercase tracking-wider block mb-1">Your name</label>
+                <input type="text" id="room-name" maxlength="12" placeholder="e.g. Alex" class="bg-white border-2 border-[#4a3525] rounded-lg px-2.5 py-2 text-sm text-[#332211] w-full focus:outline-none font-bold">
+            </div>
+
+            <div class="grid grid-cols-2 gap-2">
+                <button onclick="hostCreateRoom()" class="paper-button bg-crayonBlue text-white py-2.5 text-sm">
+                    <span id="create-label">Create Room 🆕</span>
+                </button>
+                <button onclick="showJoinForm()" class="paper-button bg-crayonYellow text-[#332211] py-2.5 text-sm">
+                    <span id="join-label">Join Room 🔑</span>
+                </button>
+            </div>
+
+            <div id="join-form" class="hidden space-y-2 text-left bg-amber-50 p-3 rounded-xl border-2 border-[#5c3d2e]">
+                <label id="code-label" class="text-xs font-bold text-[#664422] uppercase tracking-wider block">Room code (4 characters)</label>
+                <input type="text" id="room-code-input" maxlength="4" placeholder="e.g. K7Q2" class="bg-white border-2 border-[#4a3525] rounded-lg px-2.5 py-2 text-sm text-[#332211] w-full focus:outline-none font-bold uppercase">
+                <button onclick="guestJoinRoom()" class="paper-button bg-crayonGreen text-white w-full py-2.5 text-sm">
+                    <span id="connect-label">Connect 🚀</span>
+                </button>
+            </div>
+
+            <div id="room-status" class="hidden text-xs font-bold p-2.5 rounded-xl border-2 border-[#332211] bg-amber-100 text-amber-900"></div>
+
+            <button onclick="closeRoomModal()" class="paper-button bg-white text-[#332211] w-full py-2 text-sm">
+                <span id="room-cancel-label">Cancel</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Lobby Modal -->
+    <div id="lobby-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+        <div class="paper-card max-w-md w-full p-6 text-center space-y-4">
+            <div class="space-y-1">
+                <div class="w-14 h-14 bg-crayonYellow border-3 border-[#332211] rounded-full inline-flex items-center justify-center text-2xl shadow-[3px_3px_0px_#332211] mb-1">
+                    🧙‍♂️
+                </div>
+                <h2 id="lobby-title" class="text-2xl font-bold text-[#332211]">Room Lobby</h2>
+                <p id="lobby-share" class="text-sm text-[#664422]">Share this code with your friends:</p>
+                <p id="lobby-code" class="text-4xl font-bold tracking-[0.3em] text-amber-700 bg-amber-100 border-2 border-dashed border-[#5c3d2e] rounded-xl py-2">----</p>
+                <button onclick="copyInviteLink()" class="paper-button bg-white text-[#332211] w-full py-2 text-xs">
+                    <span id="copylink-label">Copy invite link 🔗</span>
+                </button>
+                <p id="copy-link-msg" class="hidden text-xs font-bold text-green-800"><span id="copied-label">Link copied! Send it to your friends! ✅</span></p>
+            </div>
+
+            <div class="text-left">
+                <label class="text-xs font-bold text-[#664422] uppercase tracking-wider block mb-1"><span id="lobby-players-label">Players</span> (<span id="lobby-count">1</span>/4)</label>
+                <div id="lobby-list" class="space-y-2"></div>
+            </div>
+
+            <div id="lobby-host-controls" class="hidden space-y-2">
+                <label id="lobby-board-label" class="text-xs font-bold text-[#664422] uppercase tracking-wider block">Board size</label>
+                <div class="grid grid-cols-3 gap-2">
+                    <button type="button" onclick="setRoomSize(100)" class="room-size-btn paper-button bg-crayonYellow p-2 text-sm text-center" data-size="100">100</button>
+                    <button type="button" onclick="setRoomSize(150)" class="room-size-btn paper-button bg-white p-2 text-sm text-center" data-size="150">150</button>
+                    <button type="button" onclick="setRoomSize(200)" class="room-size-btn paper-button bg-white p-2 text-sm text-center" data-size="200">200</button>
+                </div>
+                <label class="flex items-center justify-center space-x-2 text-xs font-bold text-[#4a3525] cursor-pointer">
+                    <input type="checkbox" id="lobby-magic-check" checked class="rounded border-[#4a3525] text-amber-600 focus:ring-0">
+                    <span id="lobby-magic-label">Magic challenge tiles ✨</span>
+                </label>
+                <div class="grid grid-cols-2 gap-2">
+                    <button onclick="hostAddBot()" class="paper-button bg-white text-[#332211] py-2 text-sm"><span id="addbot-label">+ BOT 🤖</span></button>
+                    <button onclick="hostRemoveBot()" class="paper-button bg-white text-[#332211] py-2 text-sm"><span id="removebot-label">- BOT</span></button>
+                </div>
+                <button onclick="hostStartGame()" class="paper-button bg-crayonGreen text-white w-full py-3 text-xl">
+                    <span id="lobbystart-label">START GAME! ✨</span>
+                </button>
+            </div>
+
+            <p id="lobby-guest-note" class="hidden text-sm font-bold text-amber-800 animate-pulse"><span id="lobbywait-label">Waiting for the host to start... 🌀</span></p>
+
+            <button onclick="leaveRoom()" class="paper-button bg-white text-[#332211] w-full py-2 text-sm">
+                <span class="lobbyleave-label">Leave Room 🚪</span>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        class SoundEffects {
+            constructor() {
+                this.ctx = null;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    try {
+                        this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                    } catch (e) {
+                        console.warn("AudioContext error", e);
+                    }
+                }
+                if (this.ctx && this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+            }
+
+            playRoll() {
+                if (isAudioMuted) return;
+                this.init();
+                if (!this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(160, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(420, this.ctx.currentTime + 0.15);
+                gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.15);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.15);
+            }
+
+            playStep() {
+                if (isAudioMuted) return;
+                this.init();
+                if (!this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(320, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(520, this.ctx.currentTime + 0.08);
+                gain.gain.setValueAtTime(0.12, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.08);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.08);
+            }
+
+            playLadder() {
+                if (isAudioMuted) return;
+                this.init();
+                if (!this.ctx) return;
+                const now = this.ctx.currentTime;
+                const notes = [261.63, 329.63, 392.00, 523.25];
+                notes.forEach((freq, idx) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.value = freq;
+                    gain.gain.setValueAtTime(0.12, now + idx * 0.08);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + (idx + 1) * 0.08);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now + idx * 0.08);
+                    osc.stop(now + (idx + 1) * 0.08);
+                });
+            }
+
+            playSnake() {
+                if (isAudioMuted) return;
+                this.init();
+                if (!this.ctx) return;
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(450, now);
+                osc.frequency.exponentialRampToValueAtTime(120, now + 0.35);
+                gain.gain.setValueAtTime(0.12, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.35);
+            }
+
+            playWin() {
+                if (isAudioMuted) return;
+                this.init();
+                if (!this.ctx) return;
+                const now = this.ctx.currentTime;
+                const notes = [261.63, 329.63, 392.00, 523.25, 659.25, 783.99];
+                notes.forEach((freq, idx) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.value = freq;
+                    gain.gain.setValueAtTime(0.18, now + idx * 0.1);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + idx * 0.1 + 0.25);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now + idx * 0.1);
+                    osc.stop(now + idx * 0.1 + 0.25);
+                });
+            }
+        }
+
+        const PLAYER_COLORS = [
+            { name: 'Red Crayon', bg: '#ff4d6d', text: '#ffffff' },
+            { name: 'Blue Crayon', bg: '#3a86ff', text: '#ffffff' },
+            { name: 'Green Crayon', bg: '#38b000', text: '#ffffff' },
+            { name: 'Yellow Crayon', bg: '#ffbe0b', text: '#332211' }
+        ];
+
+        const LADDER_COLORS = ['#3a86ff', '#38b000', '#ff4d6d', '#ffbe0b', '#8338ec', '#fb5607', '#2a9d8f', '#e76f51'];
+
+        const BOARD_PRESETS = {
+            100: {
+                cols: 10,
+                rows: 10,
+                ladders: { 3: 22, 8: 26, 19: 38, 28: 53, 36: 57, 50: 69, 62: 81, 74: 95 },
+                snakes: [
+                    { head: 99, tail: 78, color: '#ff4d6d', spots: '#ff85a1', curveDirection: 1 },
+                    { head: 91, tail: 68, color: '#38b000', spots: '#70e000', curveDirection: -1 },
+                    { head: 87, tail: 49, color: '#fb5607', spots: '#ffb703', curveDirection: 1 },
+                    { head: 65, tail: 25, color: '#8338ec', spots: '#c77dff', curveDirection: -1 },
+                    { head: 56, tail: 15, color: '#3a86ff', spots: '#90e0ef', curveDirection: 1 },
+                    { head: 43, tail: 17, color: '#ff006e', spots: '#ff70a6', curveDirection: -1 },
+                    { head: 32, tail: 10, color: '#2a9d8f', spots: '#a8dadc', curveDirection: 1 }
+                ]
+            },
+            150: {
+                cols: 10,
+                rows: 15,
+                ladders: { 4: 32, 15: 42, 28: 63, 45: 78, 60: 94, 75: 112, 92: 128, 110: 142, 125: 147 },
+                snakes: [
+                    { head: 148, tail: 121, color: '#ff4d6d', spots: '#ff85a1', curveDirection: 1 },
+                    { head: 138, tail: 105, color: '#38b000', spots: '#70e000', curveDirection: -1 },
+                    { head: 122, tail: 88, color: '#fb5607', spots: '#ffb703', curveDirection: 1 },
+                    { head: 107, tail: 71, color: '#8338ec', spots: '#c77dff', curveDirection: -1 },
+                    { head: 89, tail: 54, color: '#3a86ff', spots: '#90e0ef', curveDirection: 1 },
+                    { head: 72, tail: 36, color: '#ff006e', spots: '#ff70a6', curveDirection: -1 },
+                    { head: 53, tail: 24, color: '#2a9d8f', spots: '#a8dadc', curveDirection: 1 },
+                    { head: 33, tail: 11, color: '#ff4d6d', spots: '#ff85a1', curveDirection: -1 }
+                ]
+            },
+            200: {
+                cols: 10,
+                rows: 20,
+                ladders: { 
+                    5: 34, 12: 48, 25: 56, 38: 72, 52: 88, 68: 105, 
+                    82: 118, 95: 132, 110: 146, 124: 162, 142: 178, 165: 194, 175: 197 
+                },
+                snakes: [
+                    { head: 198, tail: 166, color: '#ff4d6d', spots: '#ff85a1', curveDirection: 1 },
+                    { head: 189, tail: 144, color: '#38b000', spots: '#70e000', curveDirection: -1 },
+                    { head: 172, tail: 135, color: '#fb5607', spots: '#ffb703', curveDirection: 1 },
+                    { head: 158, tail: 122, color: '#8338ec', spots: '#c77dff', curveDirection: -1 },
+                    { head: 145, tail: 108, color: '#3a86ff', spots: '#90e0ef', curveDirection: 1 },
+                    { head: 130, tail: 92, color: '#ff006e', spots: '#ff70a6', curveDirection: -1 },
+                    { head: 115, tail: 79, color: '#2a9d8f', spots: '#a8dadc', curveDirection: 1 },
+                    { head: 99, tail: 62, color: '#ff4d6d', spots: '#ff85a1', curveDirection: -1 },
+                    { head: 86, tail: 50, color: '#38b000', spots: '#70e000', curveDirection: 1 },
+                    { head: 73, tail: 35, color: '#fb5607', spots: '#ffb703', curveDirection: -1 },
+                    { head: 59, tail: 22, color: '#8338ec', spots: '#c77dff', curveDirection: 1 },
+                    { head: 43, tail: 15, color: '#3a86ff', spots: '#90e0ef', curveDirection: -1 },
+                    { head: 28, tail: 7, color: '#2a9d8f', spots: '#a8dadc', curveDirection: 1 }
+                ]
+            }
+        };
+
+        let totalTiles = 100;
+        let selectedPlayerCount = 2;
+        let players = [];
+        let magicTiles = [];
+        let currentPlayerIndex = 0;
+        let isRolling = false;
+        let isAudioMuted = false;
+
+        let magoChallengesEnabled = true;
+
+        const sound = new SoundEffects();
+
+        const MAGO_CHALLENGES = [
+            { question: "You _____ wear a helmet when riding a bike.", questionEs: "_____ usar casco cuando montas en bicicleta.", options: ["must", "can't", "shouldn't"], correctIndex: 0, rewardMsg: "Great job! You earned a Snake Shield!" },
+            { question: "You _____ touch hot stoves! It is very dangerous.", questionEs: "¡No _____ tocar estufas calientes! Es muy peligroso.", options: ["mustn't", "can", "should"], correctIndex: 0, rewardMsg: "Great job! You earned a Snake Shield!" },
+            { question: "You _____ help your friends when they need you.", questionEs: "_____ ayudar a tus amigos cuando te necesiten.", options: ["should", "mustn't", "can't"], correctIndex: 0, rewardMsg: "The Mago is proud of you!" },
+            { question: "You _____ eat vegetables to be strong.", questionEs: "_____ comer verduras para estar fuerte.", options: ["should", "mustn't", "can't"], correctIndex: 0, rewardMsg: "Healthy and wise!" },
+            { question: "You _____ run near the swimming pool.", questionEs: "No _____ correr cerca de la piscina.", options: ["mustn't", "can", "should"], correctIndex: 0, rewardMsg: "Safety first!" },
+            { question: "You _____ say please and thank you.", questionEs: "_____ decir por favor y gracias.", options: ["should", "mustn't", "can't"], correctIndex: 0, rewardMsg: "So polite!" },
+            { question: "Birds _____ fly high in the sky.", questionEs: "Los pájaros _____ volar alto en el cielo.", options: ["can", "mustn't", "shouldn't"], correctIndex: 0, rewardMsg: "You can do anything!" },
+            { question: "You _____ do your homework before playing.", questionEs: "_____ hacer tu tarea antes de jugar.", options: ["have to", "mustn't", "can't"], correctIndex: 0, rewardMsg: "Responsible wizard!" }
+        ];
+
+        async function generateMagoChallenge() {
+            await new Promise(r => setTimeout(r, 400));
+            return MAGO_CHALLENGES[Math.floor(Math.random() * MAGO_CHALLENGES.length)];
+        }
+
+        function createBoard(fixedMagic) {
+            const preset = BOARD_PRESETS[totalTiles];
+            const boardEl = document.getElementById('board');
+            boardEl.innerHTML = '';
+
+            boardEl.style.gridTemplateColumns = `repeat(${preset.cols}, 1fr)`;
+            boardEl.style.gridTemplateRows = `repeat(${preset.rows}, 1fr)`;
+            boardEl.style.aspectRatio = `${preset.cols} / ${preset.rows}`;
+
+            magicTiles = [];
+            if (Array.isArray(fixedMagic)) {
+                magicTiles = fixedMagic.slice();
+            } else if (magoChallengesEnabled) {
+                const busy = new Set([
+                    ...Object.keys(preset.ladders).map(Number),
+                    ...Object.values(preset.ladders),
+                    ...preset.snakes.flatMap(s => [s.head, s.tail])
+                ]);
+                const numMagic = Math.floor(totalTiles / 25);
+                for (let i = 0; i < numMagic; i++) {
+                    const tile = Math.floor(10 + Math.random() * (totalTiles - 20));
+                    if (!busy.has(tile) && !magicTiles.includes(tile)) {
+                        magicTiles.push(tile);
+                    }
+                }
+                preset.snakes.forEach(s => {
+                    if (!magicTiles.includes(s.tail)) magicTiles.push(s.tail);
+                });
+                Object.values(preset.ladders).forEach(top => {
+                    if (!magicTiles.includes(top)) magicTiles.push(top);
+                });
+            }
+
+            const tailSet = new Set(preset.snakes.map(s => s.tail));
+
+            for (let row = preset.rows - 1; row >= 0; row--) {
+                const isEvenRow = row % 2 === 0;
+                for (let col = 0; col < preset.cols; col++) {
+                    const actualCol = isEvenRow ? col : (preset.cols - 1) - col;
+                    const cellNum = row * preset.cols + actualCol + 1;
+
+                    const cell = document.createElement('div');
+                    cell.id = `cell-${cellNum}`;
+                    const isMagic = magicTiles.includes(cellNum);
+                    const hideSparkle = isMagic && tailSet.has(cellNum);
+                    cell.className = `cell ${isMagic ? ('magic-tile' + (hideSparkle ? ' no-sparkle' : '')) : ((row + col) % 2 === 0) ? 'cell-light' : 'cell-dark'}`;
+                    
+                    let cellLabel = `${cellNum}`;
+                    if (cellNum === totalTiles) cellLabel = 'GOAL 🏆';
+                    else if (cellNum === 1) cellLabel = 'START 🚀';
+                    else if (tailSet.has(cellNum)) cellLabel = `${cellNum} ❓`;
+
+                    cell.innerHTML = `
+                        <span class="font-bold opacity-80 leading-none">${cellLabel}</span>
+                    `;
+                    boardEl.appendChild(cell);
+                }
+            }
+        }
+
+        function getCellCenter(cellNum) {
+            const cell = document.getElementById(`cell-${cellNum}`);
+            const board = document.getElementById('board');
+            if (!cell || !board) return { x: 0, y: 0 };
+            
+            const cellRect = cell.getBoundingClientRect();
+            const boardRect = board.getBoundingClientRect();
+            
+            return {
+                x: (cellRect.left + cellRect.width / 2) - boardRect.left,
+                y: (cellRect.top + cellRect.height / 2) - boardRect.top
+            };
+        }
+
+        function drawBoardElements() {
+            const svg = document.getElementById('svg-layer');
+            if (!svg) return;
+            svg.innerHTML = '';
+            
+            const preset = BOARD_PRESETS[totalTiles];
+            if (!preset) return;
+            
+            const ladderKeys = Object.keys(preset.ladders);
+            ladderKeys.forEach((startCell, idx) => {
+                const endCell = preset.ladders[startCell];
+                const color = LADDER_COLORS[idx % LADDER_COLORS.length];
+                drawLadder(svg, parseInt(startCell), parseInt(endCell), color);
+            });
+            
+            preset.snakes.forEach(snake => {
+                drawSnake(svg, snake.head, snake.tail, snake.color, snake.spots, snake.curveDirection || 1);
+            });
+        }
+
+        function drawLadder(svg, startNum, endNum, color) {
+            const p1 = getCellCenter(startNum);
+            const p2 = getCellCenter(endNum);
+            
+            const dx = p2.x - p1.x;
+            const dy = p2.y - p1.y;
+            const angle = Math.atan2(dy, dx);
+            const perp = angle + Math.PI / 2;
+            const width = 12;
+            
+            const r1x1 = p1.x + Math.cos(perp) * width;
+            const r1y1 = p1.y + Math.sin(perp) * width;
+            const r1x2 = p2.x + Math.cos(perp) * width;
+            const r1y2 = p2.y + Math.sin(perp) * width;
+            
+            const r2x1 = p1.x - Math.cos(perp) * width;
+            const r2y1 = p1.y - Math.sin(perp) * width;
+            const r2x2 = p2.x - Math.cos(perp) * width;
+            const r2y2 = p2.y - Math.sin(perp) * width;
+            
+            const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            
+            const rail1 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            rail1.setAttribute('x1', r1x1); rail1.setAttribute('y1', r1y1);
+            rail1.setAttribute('x2', r1x2); rail1.setAttribute('y2', r1y2);
+            rail1.setAttribute('stroke', color); rail1.setAttribute('stroke-width', '5');
+            rail1.setAttribute('stroke-linecap', 'round');
+            g.appendChild(rail1);
+            
+            const rail2 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            rail2.setAttribute('x1', r2x1); rail2.setAttribute('y1', r2y1);
+            rail2.setAttribute('x2', r2x2); rail2.setAttribute('y2', r2y2);
+            rail2.setAttribute('stroke', color); rail2.setAttribute('stroke-width', '5');
+            rail2.setAttribute('stroke-linecap', 'round');
+            g.appendChild(rail2);
+            
+            const rungsCount = Math.max(3, Math.floor(Math.hypot(dx, dy) / 28));
+            for (let i = 1; i <= rungsCount; i++) {
+                const t = i / (rungsCount + 1);
+                const rx1 = r1x1 + t * (r1x2 - r1x1);
+                const ry1 = r1y1 + t * (r1y2 - r1y1);
+                const rx2 = r2x1 + t * (r2x2 - r2x1);
+                const ry2 = r2y1 + t * (r2y2 - r2y1);
+                
+                const rung = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                rung.setAttribute('x1', rx1); rung.setAttribute('y1', ry1);
+                rung.setAttribute('x2', rx2); rung.setAttribute('y2', ry2);
+                rung.setAttribute('stroke', color); rung.setAttribute('stroke-width', '4');
+                rung.setAttribute('stroke-linecap', 'round');
+                g.appendChild(rung);
+            }
+            
+            svg.appendChild(g);
+        }
+
+        function drawSnake(svg, headNum, tailNum, color, spotColor, curveDir = 1) {
+            const head = getCellCenter(headNum);
+            const tail = getCellCenter(tailNum);
+            
+            const dx = tail.x - head.x;
+            const dy = tail.y - head.y;
+            const dist = Math.hypot(dx, dy);
+            
+            const midX = (head.x + tail.x) / 2 + (dy / dist) * 35 * curveDir;
+            const midY = (head.y + tail.y) / 2 - (dx / dist) * 35 * curveDir;
+            
+            const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            const d = `M ${head.x} ${head.y} Q ${midX} ${midY} ${tail.x} ${tail.y}`;
+            path.setAttribute('d', d);
+            path.setAttribute('fill', 'none');
+            path.setAttribute('stroke', color);
+            path.setAttribute('stroke-width', '14');
+            path.setAttribute('stroke-linecap', 'round');
+            g.appendChild(path);
+            
+            const headCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            headCircle.setAttribute('cx', head.x);
+            headCircle.setAttribute('cy', head.y);
+            headCircle.setAttribute('r', '11');
+            headCircle.setAttribute('fill', color);
+            g.appendChild(headCircle);
+            
+            const eye1 = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            eye1.setAttribute('cx', head.x - 4);
+            eye1.setAttribute('cy', head.y - 3);
+            eye1.setAttribute('r', '2.5');
+            eye1.setAttribute('fill', '#ffffff');
+            g.appendChild(eye1);
+            
+            const eyePupil1 = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            eyePupil1.setAttribute('cx', head.x - 4);
+            eyePupil1.setAttribute('cy', head.y - 3);
+            eyePupil1.setAttribute('r', '1.2');
+            eyePupil1.setAttribute('fill', '#000000');
+            g.appendChild(eyePupil1);
+            
+            const eye2 = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            eye2.setAttribute('cx', head.x + 4);
+            eye2.setAttribute('cy', head.y - 3);
+            eye2.setAttribute('r', '2.5');
+            eye2.setAttribute('fill', '#ffffff');
+            g.appendChild(eye2);
+            
+            const eyePupil2 = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            eyePupil2.setAttribute('cx', head.x + 4);
+            eyePupil2.setAttribute('cy', head.y - 3);
+            eyePupil2.setAttribute('r', '1.2');
+            eyePupil2.setAttribute('fill', '#000000');
+            g.appendChild(eyePupil2);
+
+            const tongue = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            tongue.setAttribute('d', `M ${head.x} ${head.y - 10} L ${head.x - 2} ${head.y - 17} M ${head.x} ${head.y - 10} L ${head.x + 2} ${head.y - 17}`);
+            tongue.setAttribute('stroke', '#ff0033');
+            tongue.setAttribute('stroke-width', '2');
+            tongue.setAttribute('stroke-linecap', 'round');
+            g.appendChild(tongue);
+            
+            svg.appendChild(g);
+        }
+
+        function setBoardSize(size) {
+            totalTiles = size;
+            document.querySelectorAll('.board-size-btn').forEach(btn => {
+                if (parseInt(btn.getAttribute('data-size')) === size) {
+                    btn.classList.replace('bg-white', 'bg-crayonYellow');
+                } else {
+                    btn.classList.replace('bg-crayonYellow', 'bg-white');
+                }
+            });
+        }
+
+        function setPlayerCount(count) {
+            selectedPlayerCount = count;
+            document.querySelectorAll('.count-btn').forEach(btn => {
+                if (parseInt(btn.getAttribute('data-count')) === count) {
+                    btn.classList.replace('bg-white', 'bg-crayonYellow');
+                } else {
+                    btn.classList.replace('bg-crayonYellow', 'bg-white');
+                }
+            });
+            renderPlayerInputs();
+        }
+
+        function renderTokens() {
+            const layer = document.getElementById('tokens-layer');
+            if (!layer) return;
+            layer.innerHTML = '';
+
+            players.forEach(p => {
+                const token = document.createElement('div');
+                token.id = `token-player-${p.id}`;
+                token.className = 'player-token';
+                token.style.backgroundColor = p.color.bg;
+                token.innerText = p.id;
+                layer.appendChild(token);
+                updateTokenPosition(p.id, p.position);
+            });
+        }
+
+        function setPosText(playerId, pos) {
+            const txt = pos < 1 ? 'START' : pos;
+            const el = document.getElementById(`player-pos-${playerId}`);
+            if (el) el.innerText = txt;
+            const elM = document.getElementById(`player-pos-m-${playerId}`);
+            if (elM) elM.innerText = txt;
+        }
+
+        function setTurnName(player) {
+            if (!player) return;
+            const html = `${player.name}${player.isAI ? ' (BOT)' : ''}${player.hasShield ? ' 🛡️' : ''}`;
+            ['current-player-name', 'current-player-name-m'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.innerHTML = html;
+            });
+        }
+
+        function updateTokenPosition(playerId, tileNum) {
+            const token = document.getElementById(`token-player-${playerId}`);
+            if (!token) return;
+
+            const playerIndex = players.findIndex(p => p.id === playerId);
+            if (tileNum < 1) {
+                const start = getCellCenter(1);
+                const offX = (playerIndex % 2 === 0 ? -12 : 12);
+                const offY = (playerIndex > 1 ? 12 : -12);
+                token.style.left = `${start.x + offX}px`;
+                token.style.top = `${start.y + offY}px`;
+                return;
+            }
+
+            const center = getCellCenter(tileNum);
+            const offsetX = (playerIndex % 2 === 0 ? -5 : 5);
+            const offsetY = (playerIndex > 1 ? 5 : -5);
+
+            token.style.left = `${center.x + offsetX}px`;
+            token.style.top = `${center.y + offsetY}px`;
+
+            if (totalTiles > 100) {
+                const cell = document.getElementById(`cell-${tileNum}`);
+                if (cell) {
+                    cell.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
+            }
+        }
+
+        function startGameFromModal() {
+            players = [];
+            for (let i = 0; i < selectedPlayerCount; i++) {
+                const nameInput = document.getElementById(`player-name-${i}`);
+                const aiInput = document.getElementById(`player-ai-${i}`);
+                players.push({
+                    id: i + 1,
+                    name: nameInput ? (nameInput.value.trim() || `Player ${i + 1}`) : `Player ${i + 1}`,
+                    color: PLAYER_COLORS[i],
+                    position: 0,
+                    hasShield: false,
+                    isAI: aiInput ? aiInput.checked : false
+                });
+            }
+
+            magoChallengesEnabled = document.getElementById('mago-challenges-check')?.checked ?? true;
+
+            currentPlayerIndex = 0;
+            isRolling = false;
+
+            document.getElementById('config-modal').classList.add('hidden');
+            document.getElementById('game-log').innerHTML = `<div class="italic text-[#775533]">${TJ(`Started a ${totalTiles}-tile game! Roll the dice!`, `¡Partida de ${totalTiles} casillas! ¡Tira el dado!`)}</div>`;
+
+            createBoard();
+            setTimeout(() => {
+                drawBoardElements();
+                renderDiceValue(1);
+                renderPlayerCards();
+                renderTokens();
+                updateTurnDisplay();
+            }, 100);
+
+
+        }
+
+        function playerCardHTML(player, idx, suffix) {
+            return `
+                    <div class="flex items-center space-x-2.5">
+                        <div class="w-7 h-7 rounded-full border-2 border-[#332211] flex items-center justify-center font-bold text-white text-xs shadow-sm" style="background-color: ${player.color.bg}">
+                            ${player.id}
+                        </div>
+                        <div>
+                            <p class="font-bold text-sm text-[#332211] flex items-center gap-1">
+                                ${player.name}
+                                ${player.isAI ? '<span class="text-[10px] bg-amber-200 text-[#4a3525] px-1 rounded border border-[#4a3525]">BOT</span>' : ''}
+                                ${player.hasShield ? '<span title="Snake Shield Active">🛡️</span>' : ''}
+                                ${(net.active && idx === net.myIndex) ? `<span class="text-[10px] bg-green-200 text-green-900 px-1 rounded border border-green-800">${youWord()}</span>` : ''}
+                                ${(net.active && player.remote) ? '<span title="Online player">🌐</span>' : ''}
+                            </p>
+                            <p class="text-xs text-[#664422]">${tileWord()}: <span id="player-pos${suffix}-${player.id}" class="font-bold text-amber-700">${player.position < 1 ? 'START' : player.position}</span></p>
+                        </div>
+                    </div>
+                `;
+        }
+
+        function renderPlayerCards() {
+            const targets = [
+                { list: 'players-list', card: '', pos: '' },
+                { list: 'players-list-m', card: '-m', pos: '-m' }
+            ];
+            targets.forEach(({ list, card, pos }) => {
+                const listEl = document.getElementById(list);
+                if (!listEl) return;
+                listEl.innerHTML = '';
+
+                players.forEach((player, idx) => {
+                    const cardEl = document.createElement('div');
+                    cardEl.id = `player-card${card}-${idx}`;
+                    cardEl.className = `flex items-center justify-between p-2.5 rounded-xl border-2 border-[#332211] bg-white transition-all ${idx === currentPlayerIndex ? 'active-turn' : ''}`;
+                    cardEl.innerHTML = playerCardHTML(player, idx, pos);
+                    listEl.appendChild(cardEl);
+                });
+            });
+        }
+
+        async function movePlayer(steps) {
+            const player = players[currentPlayerIndex];
+            const preset = BOARD_PRESETS[totalTiles];
+            addLog(TJ(`<strong>${player.name}</strong> rolled a <strong>${steps}</strong>.`, `<strong>${player.name}</strong> sacó un <strong>${steps}</strong>.`));
+
+            let currentPos = player.position;
+            let targetPos = currentPos + steps;
+
+            if (targetPos > totalTiles) {
+                const excess = targetPos - totalTiles;
+                targetPos = totalTiles - excess;
+                addLog(TJ(`<strong>${player.name}</strong> bounced off tile ${totalTiles}! Back to tile ${targetPos}.`, `<strong>${player.name}</strong> rebotó en la casilla ${totalTiles}! Vuelve a la ${targetPos}.`));
+            }
+
+            const stepDirection = targetPos > currentPos ? 1 : -1;
+            while (currentPos !== targetPos) {
+                currentPos += stepDirection;
+                player.position = currentPos;
+                updateTokenPosition(player.id, currentPos);
+                setPosText(player.id, currentPos);
+                sound.playStep();
+                await new Promise(r => setTimeout(r, 200));
+            }
+
+            if (preset.ladders[currentPos]) {
+                const newPos = preset.ladders[currentPos];
+                sound.playLadder();
+                addLog(TJ(`🪜 <strong>${player.name}</strong> climbed a ladder to tile ${newPos}! You <strong>must</strong> feel awesome!`, `🪜 ¡<strong>${player.name}</strong> subió una escalera hasta la casilla ${newPos}! ¡Debes sentirte genial!`));
+
+                await new Promise(r => setTimeout(r, 350));
+                player.position = newPos;
+                updateTokenPosition(player.id, newPos);
+                setPosText(player.id, newPos);
+            } else {
+                const snake = preset.snakes.find(s => s.head === currentPos);
+                if (snake) {
+                    if (player.hasShield) {
+                        player.hasShield = false;
+                        addLog(TJ(`🛡️ The <strong>Snake Shield</strong> protected ${player.name}! You <strong>can</strong> stay here!`, `🛡️ ¡El <strong>escudo</strong> protegió a ${player.name}! ¡Puedes quedarte aquí!`));
+                        
+                        renderPlayerCards();
+                        setTurnName(player);
+                    } else {
+                        const newPos = snake.tail;
+                        sound.playSnake();
+                        addLog(TJ(`🐍 <strong>${player.name}</strong> slid down a snake to tile ${newPos}! You <strong>should</strong> be careful!`, `🐍 ¡<strong>${player.name}</strong> bajó por una serpiente hasta la casilla ${newPos}! ¡Deberías tener cuidado!`));
+
+                        await new Promise(r => setTimeout(r, 350));
+                        player.position = newPos;
+                        updateTokenPosition(player.id, newPos);
+                        setPosText(player.id, newPos);
+                    }
+                }
+            }
+
+            if (magicTiles.includes(player.position)) {
+                await handleMagicChallenge(player);
+            }
+
+            if (player.position === totalTiles) {
+                sound.playWin();
+                confetti({
+                    particleCount: 140,
+                    spread: 90,
+                    origin: { y: 0.6 }
+                });
+                document.getElementById('winner-name').innerText = player.name;
+                document.getElementById('victory-desc').innerText = `You finished all ${totalTiles} tiles! You must be proud!`;
+                document.getElementById('victory-modal').classList.remove('hidden');
+                if (net.active) {
+                    document.getElementById('victory-local-btns').classList.add('hidden');
+                    document.getElementById('victory-net').classList.remove('hidden');
+                    document.getElementById('victory-host-btns').classList.toggle('hidden', !net.isHost);
+                    document.getElementById('victory-guest-note').classList.toggle('hidden', net.isHost);
+                } else {
+                    document.getElementById('victory-local-btns').classList.remove('hidden');
+                    document.getElementById('victory-net').classList.add('hidden');
+                }
+                addLog(TJ(`🎉 <strong>${player.name} HAS WON THE GAME!</strong> 🎉`, `🎉 ¡<strong>${player.name} HA GANADO EL JUEGO!</strong> 🎉`));
+
+                isRolling = false;
+                return;
+            }
+
+            if (steps === 6) {
+                addLog(TJ(`✨ ${player.name} rolled a 6! You <strong>can</strong> roll again!`, `✨ ¡${player.name} sacó un 6! ¡Puedes tirar otra vez!`));
+
+                isRolling = false;
+                updateTurnDisplay();
+            } else {
+                currentPlayerIndex = (currentPlayerIndex + 1) % players.length;
+                isRolling = false;
+                updateTurnDisplay();
+            }
+        }
+
+        async function handleMagicChallenge(player) {
+            const modal = document.getElementById('magic-modal');
+            const questionEl = document.getElementById('magic-question');
+            const optionsEl = document.getElementById('magic-options');
+            const resultEl = document.getElementById('magic-result');
+
+            const myIdx = players.findIndex(p => p.id === player.id);
+            const interactive = !net.active || myIdx === net.myIndex || (net.isHost && player.isAI);
+
+            modal.classList.remove('hidden');
+            resultEl.classList.add('hidden');
+
+            if (net.active && !interactive) {
+                questionEl.innerText = T(`🧙 ${player.name} is solving a magic challenge...`, `🧙 ${player.name} está resolviendo un reto mágico...`);
+                optionsEl.innerHTML = `<div class="text-center py-4 text-amber-800 font-bold animate-pulse">${T("Waiting for the magic... 🌀", "Esperando la magia... 🌀")}</div>`;
+                if (net.resolved[player.id]) {
+                    const early = net.resolved[player.id];
+                    delete net.resolved[player.id];
+                    applyNetResolve(player, early);
+                    return;
+                }
+                const res = await new Promise(resolve => { net.waiters[player.id] = resolve; });
+                delete net.waiters[player.id];
+                delete net.resolved[player.id];
+                applyNetResolve(player, res);
+                return;
+            }
+
+            questionEl.innerText = T("✨ Consulting magic spell book...", "✨ Consultando el libro de hechizos...");
+            optionsEl.innerHTML = `<div class="text-center py-4 text-amber-800 font-bold animate-pulse">${T("Consulting magic grammar book...", "Consultando la gramática mágica...")}</div>`;
+
+            const challenge = await generateMagoChallenge();
+            questionEl.innerText = challenge.question;
+            optionsEl.innerHTML = '';
+
+            let answered = false;
+            const finishAnswer = (idx) => {
+                if (answered) return;
+                answered = true;
+                const correct = (idx === challenge.correctIndex);
+                if (correct) {
+                    player.hasShield = true;
+                    resultEl.className = 'text-sm font-bold p-2.5 rounded-xl border-2 border-[#332211] bg-green-100 text-green-900';
+                    resultEl.innerText = T(`Correct! 🛡️ Snake Shield activated!`, `¡Correcto! 🛡️ ¡Escudo activado!`);
+                    sound.playLadder();
+                    renderPlayerCards();
+                    setTurnName(players[currentPlayerIndex]);
+                } else {
+                    resultEl.className = 'text-sm font-bold p-2.5 rounded-xl border-2 border-[#332211] bg-amber-100 text-amber-900';
+                    resultEl.innerText = T(`Nice try! Keep practicing modal verbs!`, `¡Buen intento! ¡Sigue practicando!`);
+                }
+                resultEl.classList.remove('hidden');
+                if (net.active) {
+                    netSend({ t: 'resolve', id: player.id, correct: correct, pos: player.position, shield: player.hasShield });
+                }
+                setTimeout(() => {
+                    modal.classList.add('hidden');
+                    if (net.active && net.challengeDone) {
+                        const f = net.challengeDone;
+                        net.challengeDone = null;
+                        f();
+                    }
+                }, net.active ? 700 : 1800);
+            };
+
+            challenge.options.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = 'paper-button bg-white hover:bg-amber-100 text-[#332211] w-full p-2.5 text-left text-sm font-bold flex items-center justify-between';
+                btn.innerHTML = `<span>${opt}</span> <i class="fa-solid fa-chevron-right text-xs"></i>`;
+                
+                btn.onclick = () => finishAnswer(idx);
+                optionsEl.appendChild(btn);
+            });
+
+            if (player.isAI && (!net.active || net.isHost)) {
+                setTimeout(() => {
+                    const buttons = optionsEl.querySelectorAll('button');
+                    if (buttons[challenge.correctIndex]) {
+                        buttons[challenge.correctIndex].click();
+                    }
+                }, 1200);
+            }
+
+            if (net.active) {
+                await new Promise(resolve => { net.challengeDone = resolve; });
+            }
+        }
+
+        function applyNetResolve(player, res) {
+            player.hasShield = !!res.shield;
+            player.position = res.pos;
+            if (res.correct) {
+                sound.playLadder();
+                addLog(TJ(`✨ <strong>${player.name}</strong> solved the magic challenge! 🛡️ Shield activated!`, `✨ ¡<strong>${player.name}</strong> resolvió el reto! 🛡️ ¡Escudo activado!`));
+            } else {
+                addLog(TJ(`✨ <strong>${player.name}</strong> missed the magic challenge. Keep practicing!`, `✨ <strong>${player.name}</strong> falló el reto. ¡Sigue practicando!`));
+            }
+            renderPlayerCards();
+            updateTokenPosition(player.id, player.position);
+            setPosText(player.id, player.position);
+            setTurnName(players[currentPlayerIndex]);
+            document.getElementById('magic-modal').classList.add('hidden');
+        }
+
+        function renderPlayerInputs() {
+            const container = document.getElementById('player-inputs-container');
+            container.innerHTML = '';
+
+            for (let i = 0; i < selectedPlayerCount; i++) {
+                const color = PLAYER_COLORS[i];
+                const div = document.createElement('div');
+                div.className = 'flex items-center space-x-2 bg-amber-50/80 p-2 rounded-xl border-2 border-[#4a3525]';
+                
+                div.innerHTML = `
+                    <div class="w-6 h-6 rounded-full border-2 border-[#332211] flex-shrink-0" style="background-color: ${color.bg}"></div>
+                    <input type="text" id="player-name-${i}" value="Player ${i + 1}" class="bg-white border-2 border-[#4a3525] rounded-lg px-2.5 py-1 text-sm text-[#332211] w-full focus:outline-none font-bold" placeholder="Name...">
+                    <label class="flex items-center space-x-1 text-xs text-[#553311] font-bold cursor-pointer select-none">
+                        <input type="checkbox" id="player-ai-${i}" class="rounded border-[#4a3525] text-amber-600 focus:ring-0">
+                        <span>BOT</span>
+                    </label>
+                `;
+                container.appendChild(div);
+            }
+        }
+
+        function closeConfigModal() {
+            document.getElementById('config-modal').classList.add('hidden');
+        }
+
+        function restartGame() {
+            if (net.active) {
+                if (net.isHost) {
+                    netSend({ t: 'lobby-back' });
+                    showLobby();
+                    broadcastLobby();
+                }
+                return;
+            }
+            document.getElementById('victory-modal').classList.add('hidden');
+            document.getElementById('config-modal').classList.remove('hidden');
+            renderPlayerInputs();
+        }
+
+        function openConfigModal() {
+            document.getElementById('config-modal').classList.remove('hidden');
+            document.getElementById('victory-modal').classList.add('hidden');
+            renderPlayerInputs();
+        }
+
+        function updateTurnDisplay() {
+            const player = players[currentPlayerIndex];
+            
+            players.forEach((_, idx) => {
+                [`player-card-${idx}`, `player-card-m-${idx}`].forEach(cardId => {
+                    const card = document.getElementById(cardId);
+                    if (card) {
+                        if (idx === currentPlayerIndex) {
+                            card.classList.add('active-turn');
+                        } else {
+                            card.classList.remove('active-turn');
+                        }
+                    }
+                });
+            });
+
+            const badge = document.getElementById('turn-badge');
+            if (badge) {
+                badge.style.backgroundColor = player.color.bg;
+                badge.innerText = player.id;
+            }
+            const badgeM = document.getElementById('turn-badge-m');
+            if (badgeM) {
+                badgeM.style.backgroundColor = player.color.bg;
+                badgeM.innerText = player.id;
+            }
+            document.querySelectorAll('.player-token').forEach(t => t.classList.remove('token-active'));
+            const activeToken = document.getElementById(`token-player-${player.id}`);
+            if (activeToken) activeToken.classList.add('token-active');
+
+            setTurnName(player);
+
+            updateTokenPosition(player.id, player.position);
+
+            const rollBtn = document.getElementById('roll-btn');
+            const rollBtnM = document.getElementById('roll-btn-m');
+            const setRollDisabled = (v) => {
+                if (rollBtn) rollBtn.disabled = v;
+                if (rollBtnM) rollBtnM.disabled = v;
+            };
+            if (!net.active) {
+                if (player.isAI && !isRolling) {
+                    setRollDisabled(true);
+                    setTimeout(() => {
+                        rollDice();
+                    }, 800);
+                } else {
+                    setRollDisabled(false);
+                }
+            } else {
+                const mine = (currentPlayerIndex === net.myIndex) && !player.isAI;
+                if (player.isAI && net.isHost && !isRolling) {
+                    setRollDisabled(true);
+                    setTimeout(() => {
+                        if (!net.active || !players[currentPlayerIndex] || !players[currentPlayerIndex].isAI) return;
+                        netRoll();
+                    }, 900);
+                } else if (mine && !isRolling) {
+                    setRollDisabled(false);
+                } else {
+                    setRollDisabled(true);
+                }
+            }
+        }
+
+        function renderDiceValue(val) {
+            const dotsMap = {
+                1: [4],
+                2: [0, 8],
+                3: [0, 4, 8],
+                4: [0, 2, 6, 8],
+                5: [0, 2, 4, 6, 8],
+                6: [0, 2, 3, 5, 6, 8]
+            };
+
+            const activeDots = dotsMap[val] || [4];
+            ['dice', 'dice-m'].forEach(diceId => {
+                const diceEl = document.getElementById(diceId);
+                if (!diceEl) return;
+                diceEl.innerHTML = '';
+                for (let i = 0; i < 9; i++) {
+                    const dot = document.createElement('div');
+                    if (activeDots.includes(i)) {
+                        dot.className = 'dice-dot';
+                    }
+                    diceEl.appendChild(dot);
+                }
+            });
+        }
+
+        function rollDiceFromClick() {
+            const player = players[currentPlayerIndex];
+            if (!player || isRolling) return;
+            if (net.active) {
+                if (currentPlayerIndex !== net.myIndex || player.isAI) return;
+                netRoll();
+                return;
+            }
+            if (player.isAI) return;
+            rollDice();
+        }
+
+        function rollDice() {
+            if (isRolling) return;
+            isRolling = true;
+
+            const diceValue = Math.floor(Math.random() * 6) + 1;
+            diceAnim(diceValue);
+        }
+
+        function netRoll() {
+            if (isRolling) return;
+            isRolling = true;
+            const diceValue = Math.floor(Math.random() * 6) + 1;
+            netSend({ t: 'roll', i: currentPlayerIndex, v: diceValue });
+            diceAnim(diceValue);
+        }
+
+        async function diceAnim(diceValue) {
+            const diceEl = document.getElementById('dice');
+            const diceElM = document.getElementById('dice-m');
+
+            sound.playRoll();
+
+            let count = 0;
+            await new Promise(resolve => {
+                const interval = setInterval(() => {
+                    const randomVal = Math.floor(Math.random() * 6) + 1;
+                    renderDiceValue(randomVal);
+                    const spin = `rotate(${Math.random() * 20 - 10}deg) scale(1.1)`;
+                    if (diceEl) diceEl.style.transform = spin;
+                    if (diceElM) diceElM.style.transform = spin;
+                    count++;
+
+                    if (count > 8) {
+                        clearInterval(interval);
+                        if (diceEl) diceEl.style.transform = 'none';
+                        if (diceElM) diceElM.style.transform = 'none';
+                        renderDiceValue(diceValue);
+                        resolve();
+                    }
+                }, 60);
+            });
+            await new Promise(r => setTimeout(r, 300));
+            await movePlayer(diceValue);
+        }
+
+        function addLog(message) {
+            const logContainer = document.getElementById('game-log');
+            if (!logContainer) return;
+            const entry = document.createElement('div');
+            entry.className = 'border-b border-dashed border-[#a88d71] pb-1';
+            entry.innerHTML = message;
+            logContainer.prepend(entry);
+        }
+
+        function toggleAudio() {
+            isAudioMuted = !isAudioMuted;
+            const icon = document.getElementById('sound-icon');
+            if (icon) {
+                if (isAudioMuted) {
+                    icon.className = 'fa-solid fa-volume-xmark text-red-600';
+                } else {
+                    icon.className = 'fa-solid fa-volume-high text-[#332211]';
+                }
+            }
+        }
+
+        // ============ ONLINE MULTIPLAYER (PeerJS P2P, no backend needed) ============
+        const net = {
+            active: false, isHost: false, peer: null, conn: null, conns: [],
+            code: '', myIndex: -1, queue: Promise.resolve(), waiters: {},
+            resolved: {},
+            challengeDone: null, lobby: [], roomSize: 100
+        };
+
+        function makeRoomCode() {
+            const chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+            let s = '';
+            for (let i = 0; i < 4; i++) s += chars[Math.floor(Math.random() * chars.length)];
+            return s;
+        }
+        function peerIdFor(code) { return 'mago-sl-v1-' + code; }
+
+        function roomStatus(msg) {
+            const el = document.getElementById('room-status');
+            el.classList.remove('hidden');
+            el.innerText = msg;
+        }
+
+        function openRoomModal() {
+            document.getElementById('room-modal').classList.remove('hidden');
+            document.getElementById('join-form').classList.add('hidden');
+            document.getElementById('room-status').classList.add('hidden');
+            const pre = new URLSearchParams(window.location.search).get('room');
+            if (pre) {
+                document.getElementById('room-code-input').value = pre.toUpperCase().slice(0, 4);
+                document.getElementById('join-form').classList.remove('hidden');
+            }
+        }
+        function closeRoomModal() {
+            if (net.lobby.length > 0 || net.active) {
+                showLobby();
+            } else {
+                leaveRoom(true);
+                document.getElementById('room-modal').classList.add('hidden');
+            }
+        }
+        function showJoinForm() {
+            document.getElementById('join-form').classList.toggle('hidden');
+        }
+
+        function needPeerLib() {
+            if (typeof Peer === 'undefined') {
+                roomStatus(T('❌ Could not load multiplayer library. Check your internet and reload.', '❌ No se pudo cargar el multijugador. Revisa tu internet y recarga.'));
+                return true;
+            }
+            return false;
+        }
+
+        function hostCreateRoom() {
+            const name = (document.getElementById('room-name').value || '').trim().slice(0, 12) || 'Host';
+            if (needPeerLib()) return;
+            leaveRoom(true);
+            net.code = makeRoomCode();
+            net.isHost = true;
+            net.roomSize = 100;
+            roomStatus(T('Creating room... 🌀', 'Creando sala... 🌀'));
+            try {
+                net.peer = new Peer(peerIdFor(net.code));
+            } catch (e) {
+                roomStatus(T('❌ Could not start multiplayer. Reload and try again.', '❌ No se pudo iniciar. Recarga e intenta otra vez.'));
+                return;
+            }
+            net.peer.on('open', () => {
+                net.lobby = [{ name: name, isAI: false }];
+                net.myIndex = 0;
+                document.querySelectorAll('.room-size-btn').forEach(btn => {
+                    if (btn.getAttribute('data-size') === '100') btn.classList.replace('bg-white', 'bg-crayonYellow');
+                    else btn.classList.replace('bg-crayonYellow', 'bg-white');
+                });
+                showLobby();
+            });
+            net.peer.on('connection', onHostConn);
+            net.peer.on('error', (err) => {
+                if (err && err.type === 'unavailable-id') {
+                    roomStatus(T('❌ Code taken, trying another...', '❌ Código ocupado, probando otro...'));
+                    setTimeout(hostCreateRoom, 600);
+                } else {
+                    roomStatus(T('❌ Connection error: ', '❌ Error de conexión: ') + ((err && err.type) || 'unknown'));
+                }
+            });
+        }
+
+        function onHostConn(c) {
+            c.on('open', () => { net.conns.push(c); });
+            c.on('data', (d) => hostOnData(c, d));
+            c.on('close', () => hostOnLeave(c));
+            c.on('error', () => hostOnLeave(c));
+        }
+
+        function hostOnData(c, d) {
+            if (!d || !d.t) return;
+            if (d.t === 'join') {
+                if (net.active || net.lobby.length >= 4) {
+                    try { c.send({ t: 'full' }); } catch (e) {}
+                    return;
+                }
+                const nm = String(d.name || 'Guest').slice(0, 12) || 'Guest';
+                c.pIndex = net.lobby.length;
+                net.lobby.push({ name: nm, isAI: false });
+                addLog(TJ(`🌐 <strong>${nm}</strong> joined the room!`, `🌐 ¡<strong>${nm}</strong> se unió a la sala!`));
+                broadcastLobby();
+            } else if (d.t === 'leave') {
+                hostOnLeave(c);
+            } else if (d.t === 'roll' || d.t === 'resolve') {
+                if (!net.active) return;
+                if (d.t === 'roll' && d.i !== currentPlayerIndex) return;
+                relayToGuests(d, c);
+                applyNetMsg(d);
+            }
+        }
+
+        function hostOnLeave(c) {
+            net.conns = net.conns.filter(x => x !== c);
+            try { c.close(); } catch (e) {}
+            if (typeof c.pIndex !== 'number') return;
+            if (!net.active) {
+                net.lobby.splice(c.pIndex, 1);
+                net.conns.forEach(x => { if (typeof x.pIndex === 'number' && x.pIndex > c.pIndex) x.pIndex--; });
+                broadcastLobby();
+            } else {
+                hostTakeover(c.pIndex);
+            }
+        }
+
+        function hostTakeover(idx) {
+            const p = players[idx];
+            if (!p || p.isAI) return;
+            p.isAI = true;
+            renderPlayerCards();
+            addLog(TJ(`🚪 <strong>${p.name}</strong> left! A Mago BOT takes over! 🤖`, `🚪 ¡<strong>${p.name}</strong> se fue! ¡Un BOT del Mago toma su lugar! 🤖`));
+            broadcastAll({ t: 'takeover', idx: idx });
+            net.resolved[p.id] = { correct: false, pos: p.position, shield: p.hasShield };
+            if (net.waiters[p.id]) {
+                const w = net.waiters[p.id];
+                delete net.waiters[p.id];
+                w(net.resolved[p.id]);
+            }
+            updateTurnDisplay();
+        }
+
+        function relayToGuests(d, except) {
+            net.conns.forEach(x => { if (x !== except) { try { x.send(d); } catch (e) {} } });
+        }
+        function broadcastAll(d) {
+            net.conns.forEach(x => { try { x.send(d); } catch (e) {} });
+        }
+        function netSend(d) {
+            if (!net.active) return;
+            if (net.isHost) broadcastAll(d);
+            else if (net.conn) { try { net.conn.send(d); } catch (e) {} }
+        }
+
+        function broadcastLobby() {
+            renderLobby();
+            broadcastAll({ t: 'lobby', lobby: net.lobby, size: net.roomSize });
+        }
+
+        function setRoomSize(size) {
+            net.roomSize = size;
+            document.querySelectorAll('.room-size-btn').forEach(btn => {
+                if (parseInt(btn.getAttribute('data-size')) === size) btn.classList.replace('bg-white', 'bg-crayonYellow');
+                else btn.classList.replace('bg-crayonYellow', 'bg-white');
+            });
+            broadcastLobby();
+        }
+
+        function hostAddBot() {
+            if (net.lobby.length >= 4) return;
+            const n = net.lobby.filter(p => p.isAI).length + 1;
+            net.lobby.push({ name: 'BOT ' + n, isAI: true });
+            broadcastLobby();
+        }
+        function hostRemoveBot() {
+            for (let i = net.lobby.length - 1; i >= 0; i--) {
+                if (net.lobby[i].isAI) { net.lobby.splice(i, 1); break; }
+            }
+            broadcastLobby();
+        }
+
+        function renderLobby() {
+            document.getElementById('lobby-code').innerText = net.code || '----';
+            document.getElementById('lobby-count').innerText = net.lobby.length;
+            const list = document.getElementById('lobby-list');
+            list.innerHTML = '';
+            net.lobby.forEach((p, i) => {
+                const color = PLAYER_COLORS[i % PLAYER_COLORS.length];
+                const div = document.createElement('div');
+                div.className = 'flex items-center space-x-2 bg-amber-50/80 p-2 rounded-xl border-2 border-[#4a3525]';
+                div.innerHTML = `<div class="w-6 h-6 rounded-full border-2 border-[#332211] flex-shrink-0" style="background-color: ${color.bg}"></div>
+                    <span class="font-bold text-sm text-[#332211] flex-1 text-left">${p.name}</span>
+                    ${p.isAI ? '<span class="text-[10px] bg-amber-200 px-1 rounded border border-[#4a3525]">BOT</span>' : '<span title="Online player">🌐</span>'}`;
+                list.appendChild(div);
+            });
+            document.getElementById('lobby-host-controls').classList.toggle('hidden', !net.isHost);
+            document.getElementById('lobby-guest-note').classList.toggle('hidden', net.isHost);
+        }
+
+        function showLobby() {
+            ['room-modal', 'config-modal', 'victory-modal', 'magic-modal'].forEach(id => document.getElementById(id).classList.add('hidden'));
+            document.getElementById('lobby-modal').classList.remove('hidden');
+            renderLobby();
+        }
+
+        function copyInviteLink() {
+            const url = location.origin + location.pathname + '?room=' + net.code;
+            const done = () => {
+                const el = document.getElementById('copy-link-msg');
+                el.classList.remove('hidden');
+                setTimeout(() => el.classList.add('hidden'), 2000);
+            };
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(url).then(done).catch(() => {
+                    window.prompt('Copy your invite link:', url);
+                });
+            } else {
+                window.prompt('Copy your invite link:', url);
+            }
+        }
+
+        function hostStartGame() {
+            if (net.lobby.length < 2) {
+                addLog(TJ('🌐 Need at least 2 players to start!', '🌐 ¡Se necesitan al menos 2 jugadores!'));
+                return;
+            }
+            totalTiles = net.roomSize;
+            magoChallengesEnabled = document.getElementById('lobby-magic-check')?.checked ?? true;
+            createBoard();
+            const fixed = magicTiles.slice();
+            const base = {
+                t: 'start',
+                totalTiles: totalTiles,
+                magicTiles: fixed,
+                challenges: magoChallengesEnabled,
+                players: net.lobby.map((p, i) => ({
+                    id: i + 1, name: p.name, color: PLAYER_COLORS[i % PLAYER_COLORS.length],
+                    position: 0, hasShield: false, isAI: p.isAI
+                }))
+            };
+            net.conns.forEach(c => {
+                if (typeof c.pIndex === 'number') {
+                    try { c.send(Object.assign({ you: c.pIndex }, base)); } catch (e) {}
+                }
+            });
+            beginNetGame(Object.assign({ you: 0 }, base));
+        }
+
+        function beginNetGame(s) {
+            net.active = true;
+            net.myIndex = s.you;
+            totalTiles = s.totalTiles;
+            magoChallengesEnabled = s.challenges;
+            players = s.players.map((p, i) => Object.assign({}, p, { remote: !p.isAI && i !== s.you }));
+            currentPlayerIndex = 0;
+            isRolling = false;
+            net.waiters = {};
+            net.resolved = {};
+            net.challengeDone = null;
+            net.queue = Promise.resolve();
+            ['room-modal', 'lobby-modal', 'config-modal', 'victory-modal', 'magic-modal'].forEach(id => document.getElementById(id).classList.add('hidden'));
+            document.getElementById('game-log').innerHTML = `<div class="italic text-[#775533]">${TJ(`🌐 Online room <strong>${net.code}</strong> started! Good luck!`, `🌐 ¡Sala online <strong>${net.code}</strong> iniciada! ¡Buena suerte!`)}</div>`;
+            createBoard(s.magicTiles);
+            drawBoardElements();
+            renderDiceValue(1);
+            renderPlayerCards();
+            renderTokens();
+            updateTurnDisplay();
+
+        }
+
+        function guestJoinRoom() {
+            const code = (document.getElementById('room-code-input').value || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+            const name = (document.getElementById('room-name').value || '').trim().slice(0, 12) || 'Guest';
+            if (code.length !== 4) { roomStatus(T('❌ Enter the 4-character room code.', '❌ Escribe el código de 4 caracteres.')); return; }
+            if (needPeerLib()) return;
+            leaveRoom(true);
+            net.code = code;
+            net.isHost = false;
+            roomStatus(T('Connecting to room ', 'Conectando a la sala ') + code + '... 🌀');
+            try {
+                net.peer = new Peer(peerIdFor(code) + '-' + Math.floor(Math.random() * 100000));
+            } catch (e) {
+                roomStatus(T('❌ Could not start. Reload and try again.', '❌ No se pudo iniciar. Recarga e intenta otra vez.'));
+                return;
+            }
+            net.peer.on('open', () => {
+                net.conn = net.peer.connect(peerIdFor(code), { reliable: true });
+                net.conn.on('open', () => { try { net.conn.send({ t: 'join', name: name }); } catch (e) {} });
+                net.conn.on('data', guestOnData);
+                net.conn.on('close', () => {
+                    if (net.active) {
+                        net.active = false;
+                        addLog(TJ('🚪 The host left the room.', '🚪 El anfitrión dejó la sala.'));
+                    }
+                    document.getElementById('lobby-modal').classList.add('hidden');
+                    roomStatus(T('🚪 Host disconnected.', '🚪 Anfitrión desconectado.'));
+                    document.getElementById('room-modal').classList.remove('hidden');
+                });
+                net.conn.on('error', () => roomStatus(T('❌ Connection lost.', '❌ Conexión perdida.')));
+                setTimeout(() => {
+                    if (!net.active && document.getElementById('lobby-modal').classList.contains('hidden') && net.conn && !net.conn.open) {
+                        roomStatus(T('❌ Could not reach room. Check the code.', '❌ No se encontró la sala. Revisa el código.'));
+                    }
+                }, 9000);
+            });
+            net.peer.on('error', (err) => {
+                if (err && err.type === 'peer-unavailable') roomStatus(T('❌ Room not found. Check the code.', '❌ Sala no encontrada. Revisa el código.'));
+                else roomStatus(T('❌ Connection error: ', '❌ Error de conexión: ') + ((err && err.type) || 'unknown'));
+            });
+        }
+
+        function guestOnData(d) {
+            if (!d || !d.t) return;
+            if (d.t === 'lobby') {
+                net.lobby = d.lobby || [];
+                net.roomSize = d.size || 100;
+                showLobby();
+            } else if (d.t === 'full') {
+                roomStatus(T('❌ Room is full or the game already started.', '❌ Sala llena o partida ya iniciada.'));
+            } else if (d.t === 'start') {
+                beginNetGame(d);
+            } else if (d.t === 'roll' || d.t === 'resolve') {
+                applyNetMsg(d);
+            } else if (d.t === 'takeover') {
+                applyTakeover(d.idx);
+            } else if (d.t === 'lobby-back') {
+                net.active = false;
+                document.getElementById('victory-modal').classList.add('hidden');
+                showLobby();
+            }
+        }
+
+        function applyNetMsg(d) {
+            if (!net.active) return;
+            if (d.t === 'roll') {
+                net.queue = net.queue.then(async () => {
+                    isRolling = true;
+                    await diceAnim(d.v);
+                }).catch(() => { isRolling = false; });
+            } else if (d.t === 'resolve') {
+                const p = players.find(x => x.id === d.id);
+                if (!p) return;
+                const res = { correct: d.correct, pos: d.pos, shield: d.shield };
+                net.resolved[d.id] = res;
+                if (net.waiters[d.id]) {
+                    const w = net.waiters[d.id];
+                    delete net.waiters[d.id];
+                    w(res);
+                }
+            }
+        }
+
+        function applyTakeover(idx) {
+            const p = players[idx];
+            if (!p || p.isAI) return;
+            p.isAI = true;
+            p.remote = false;
+            renderPlayerCards();
+            addLog(TJ(`🚪 <strong>${p.name}</strong> left! A Mago BOT takes over! 🤖`, `🚪 ¡<strong>${p.name}</strong> se fue! ¡Un BOT del Mago toma su lugar! 🤖`));
+            net.resolved[p.id] = { correct: false, pos: p.position, shield: p.hasShield };
+            if (net.waiters[p.id]) {
+                const w = net.waiters[p.id];
+                delete net.waiters[p.id];
+                w(net.resolved[p.id]);
+            }
+            updateTurnDisplay();
+        }
+
+        function leaveRoom(silent) {
+            try {
+                if (net.conn) {
+                    try { net.conn.send({ t: 'leave' }); } catch (e) {}
+                    net.conn.close();
+                }
+            } catch (e) {}
+            try { net.conns.forEach(c => { try { c.close(); } catch (e) {} }); } catch (e) {}
+            try { if (net.peer) net.peer.destroy(); } catch (e) {}
+            net.active = false;
+            net.isHost = false;
+            net.peer = null;
+            net.conn = null;
+            net.conns = [];
+            net.code = '';
+            net.myIndex = -1;
+            net.lobby = [];
+            net.waiters = {};
+            net.resolved = {};
+            net.challengeDone = null;
+            net.queue = Promise.resolve();
+            if (!silent) location.reload();
+        }
+
+        // Game journal (log) is always in Spanish; everything else stays in English.
+        function TJ(en, es) { return es; }
+        function T(en, es) { return en; }
+        function tileWord() { return 'Tile'; }
+        function youWord() { return 'YOU'; }
+
+        window.onload = function() {
+            createBoard();
+            drawBoardElements();
+            renderDiceValue(1);
+            const preRoom = new URLSearchParams(window.location.search).get('room');
+            if (preRoom) {
+                openRoomModal();
+            } else {
+                renderPlayerInputs();
+                startGameFromModal();
+            }
+
+            window.addEventListener('resize', () => {
+                drawBoardElements();
+                if (players.length > 0) {
+                    players.forEach(p => updateTokenPosition(p.id, p.position));
+                }
+            });
+        };
+    </script>
+</body>
+</html>
